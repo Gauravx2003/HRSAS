@@ -110,7 +110,7 @@ export const complaintCategories = pgTable("complaint_categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 50 }).notNull(),
   slaHours: integer("sla_hours").notNull(),
-  vecdorOnly: boolean("vendor_only").default(false),
+  vendorOnly: boolean("vendor_only").default(false),
 });
 
 export const complaints = pgTable("complaints", {
