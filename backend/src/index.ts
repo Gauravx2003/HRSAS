@@ -9,6 +9,7 @@ dotenv.config({
 import authRoutes from "./modules/auth/auth.routes";
 import testRoutes from "./routes/test.routes";
 import complaintRoutes from "./modules/complaints/complaints.routes";
+import staffRoutes from "./modules/staff/staff.routes";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get("/health", (_req: Request, res: Response) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/complaints", complaintRoutes);
+app.use("/api/staff", staffRoutes);
 
 const PORT = process.env.PORT || 5000;
 

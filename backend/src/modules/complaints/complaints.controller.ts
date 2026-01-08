@@ -17,7 +17,7 @@ export const raiseComplaint = async (req: Authenticate, res: Response) => {
       description
     );
 
-    return res.json(complaint);
+    return res.status(201).json(complaint);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });
