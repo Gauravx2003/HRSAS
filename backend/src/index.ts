@@ -10,6 +10,7 @@ import authRoutes from "./modules/auth/auth.routes";
 import testRoutes from "./routes/test.routes";
 import complaintRoutes from "./modules/complaints/complaints.routes";
 import staffRoutes from "./modules/staff/staff.routes";
+import attachmentsRoutes from "./modules/complaints/attachments.routes";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/staff", staffRoutes);
+app.use("/api/complaints", attachmentsRoutes);
 
 const PORT = process.env.PORT || 5000;
 
