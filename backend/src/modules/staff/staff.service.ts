@@ -5,6 +5,7 @@ import {
   complaintCategories,
   staffProfiles,
 } from "../../db/schema";
+import { createNotification } from "../notifications/notifications.service";
 
 import { eq } from "drizzle-orm";
 
@@ -39,6 +40,13 @@ export const updateComplaintStatus = async (
 
   if (!complaint || complaint.assignedStaff != staffId) {
     throw new Error("Unauthorized");
+  }
+
+  if (status === "IN_PROGRESS") {
+    await createNotification(
+      complaint.residentId,
+      "Your complaint is in progress"
+    );
   }
 
   const [updated] = await db

@@ -11,6 +11,10 @@ import testRoutes from "./routes/test.routes";
 import complaintRoutes from "./modules/complaints/complaints.routes";
 import staffRoutes from "./modules/staff/staff.routes";
 import attachmentsRoutes from "./modules/complaints/attachments.routes";
+import lostAndFoundRoutes from "./modules/lostAndFound/lostAndFound.routes";
+import notificationsRoutes from "./modules/notifications/notifications.routes";
+import { runEscalationJob } from "./jobs/escalation.job";
+import cron from "node-cron";
 
 const app = express();
 
@@ -21,11 +25,17 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "OK" });
 });
 
+cron.schedule("*/10 * * * *", () => {
+  runEscalationJob();
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/complaints", complaintRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/complaints", attachmentsRoutes);
+app.use("/api/lost-and-found", lostAndFoundRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

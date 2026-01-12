@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Authenticate } from "../../middleware/auth";
-import { createComplaint } from "./complaints.service";
+import { createComplaint, getMyComplaints } from "./complaints.service";
 
 export const raiseComplaint = async (req: Authenticate, res: Response) => {
   try {
@@ -18,6 +18,19 @@ export const raiseComplaint = async (req: Authenticate, res: Response) => {
     );
 
     return res.status(201).json(complaint);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getMyComplaintsController = async (
+  req: Authenticate,
+  res: Response
+) => {
+  try {
+    const myComplaints = await getMyComplaints(req.user!.userId);
+    return res.status(200).json(myComplaints);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });

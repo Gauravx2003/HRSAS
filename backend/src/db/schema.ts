@@ -40,6 +40,17 @@ export const approvalStatusEnum = pgEnum("approval_status", [
   "REJECTED",
 ]);
 
+export const lostAndFoundStatusEnum = pgEnum("lost_and_found_status", [
+  "OPEN",
+  "CLAIMED",
+  "CLOSED",
+]);
+
+export const lostAndFoundTypeEnum = pgEnum("lost_and_found_type", [
+  "LOST",
+  "FOUND",
+]);
+
 //Tables
 
 export const organizations = pgTable("organizations", {
@@ -180,4 +191,83 @@ export const visitorRequests = pgTable("visitor_requests", {
   visitDate: timestamp("visit_date").notNull(),
   status: approvalStatusEnum("status").default("PENDING"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const escalations = pgTable("escalations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  complaintId: uuid("complaint_id")
+    .references(() => complaints.id, { onDelete: "cascade" })
+    .notNull(),
+  level: integer("level").notNull(),
+  reason: text("reason").notNull(),
+  escalatedTo: uuid("escalated_to").references(() => users.id),
+  escalatedAt: timestamp("escalated_at").defaultNow().notNull(),
+});
+
+export const notices = pgTable("notices", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  createdBy: uuid("created_by")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const lostAndFoundItems = pgTable("lost_and_found_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+
+  type: lostAndFoundTypeEnum("type").notNull(),
+
+  reportedBy: uuid("reported_by")
+    .references(() => users.id)
+    .notNull(),
+
+  claimedBy: uuid("claimed_by").references(() => users.id),
+  claimedAt: timestamp("claimed_at"),
+
+  lostDate: timestamp("lost_date"),
+  lostLocation: varchar("lost_location", { length: 255 }),
+
+  foundDate: timestamp("found_date"),
+  foundLocation: varchar("found_location", { length: 255 }),
+
+  status: lostAndFoundStatusEnum("status").default("OPEN"),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const lostFoundAttachments = pgTable("lost_found_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  itemId: uuid("item_id")
+    .references(() => lostAndFoundItems.id, { onDelete: "cascade" })
+    .notNull(),
+
+  uploadedBy: uuid("uploaded_by")
+    .references(() => users.id)
+    .notNull(),
+
+  fileUrl: text("file_url").notNull(), // Cloudinary secure_url
+  publicId: text("public_id").notNull(), // Cloudinary public_id
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+
+  message: text("message").notNull(),
+
+  isRead: boolean("is_read").default(false).notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -5,6 +5,7 @@ import {
   users,
   staffProfiles,
 } from "../../db/schema";
+import { createNotification } from "../notifications/notifications.service";
 
 import { eq, NotNull, and, sql } from "drizzle-orm";
 
@@ -55,6 +56,10 @@ export const createComplaint = async (
   const slaDeadline = new Date();
   slaDeadline.setHours(slaDeadline.getHours() + category.slaHours);
 
+  if (assignedStaff) {
+    await createNotification(assignedStaff, "You have a new complaint");
+  }
+
   const [complaint] = await db
     .insert(complaints)
     .values({
@@ -69,4 +74,13 @@ export const createComplaint = async (
     .returning();
 
   return complaint;
+};
+
+export const getMyComplaints = async (id: string) => {
+  const myComplaints = await db
+    .select()
+    .from(complaints)
+    .where(eq(complaints.residentId, id));
+
+  return myComplaints;
 };
