@@ -6,6 +6,8 @@ import {
   claimLostAndFoundItemController,
   getMyLostItemController,
   getAllFoundItemController,
+  getAllClaimedItemsController,
+  closeLostAndFoundItemController,
 } from "./lostAndFound.controller";
 
 const router = Router();
@@ -43,6 +45,20 @@ router.get(
   authenticate,
   authorize(["RESIDENT", "STAFF", "ADMIN"]),
   getAllFoundItemController
+);
+
+router.get(
+  "/claimed",
+  authenticate,
+  authorize(["ADMIN"]),
+  getAllClaimedItemsController
+);
+
+router.patch(
+  "/:id/close",
+  authenticate,
+  authorize(["ADMIN"]),
+  closeLostAndFoundItemController
 );
 
 export default router;

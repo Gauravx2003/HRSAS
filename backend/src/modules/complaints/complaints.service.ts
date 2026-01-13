@@ -7,7 +7,7 @@ import {
 } from "../../db/schema";
 import { createNotification } from "../notifications/notifications.service";
 
-import { eq, NotNull, and, sql } from "drizzle-orm";
+import { eq, NotNull, and, sql, getTableColumns } from "drizzle-orm";
 
 export const createComplaint = async (
   residentId: string,
@@ -78,9 +78,25 @@ export const createComplaint = async (
 
 export const getMyComplaints = async (id: string) => {
   const myComplaints = await db
-    .select()
+    .select({
+      ...getTableColumns(complaints),
+      categoryName: complaintCategories.name,
+    })
     .from(complaints)
+    .leftJoin(
+      complaintCategories,
+      eq(complaints.categoryId, complaintCategories.id)
+    )
     .where(eq(complaints.residentId, id));
 
   return myComplaints;
+};
+
+export const getEscalatedComplaints = async () => {
+  const escalatedComplaints = await db
+    .select()
+    .from(complaints)
+    .where(eq(complaints.status, "ESCALATED"));
+
+  return escalatedComplaints;
 };

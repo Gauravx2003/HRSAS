@@ -212,7 +212,7 @@ export const notices = pgTable("notices", {
     .references(() => users.id)
     .notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-  expiresAt: timestamp("expires_at").notNull(),
+  expiresAt: timestamp("expires_at"),
 });
 
 export const lostAndFoundItems = pgTable("lost_and_found_items", {

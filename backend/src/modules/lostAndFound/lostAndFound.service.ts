@@ -66,6 +66,21 @@ export const updateLostAndFoundItem = async (
   }
 };
 
+export const closeLostAndFoundItem = async (itemId: string) => {
+  try {
+    const [record] = await db
+      .update(lostAndFoundItems)
+      .set({ status: "CLOSED" })
+      .where(eq(lostAndFoundItems.id, itemId))
+      .returning();
+
+    return record;
+  } catch (err) {
+    console.error("DB update failed:", err);
+    throw err;
+  }
+};
+
 export const claimLostAndFoundItem = async (
   itemId: string,
   claimerId: string
@@ -146,6 +161,15 @@ export const getAllFoundItem = async () => {
     console.error("DB select failed:", error);
     throw error;
   }
+};
+
+export const getAllClaimedItems = async () => {
+  const claimedItems = await db
+    .select()
+    .from(lostAndFoundItems)
+    .where(eq(lostAndFoundItems.status, "CLAIMED"));
+
+  return claimedItems;
 };
 // export const lostAndFoundItems = pgTable("lost_and_found_items", {
 //   id: uuid("id").defaultRandom().primaryKey(),

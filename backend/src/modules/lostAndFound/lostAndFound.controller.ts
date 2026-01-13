@@ -6,6 +6,8 @@ import {
   claimLostAndFoundItem,
   getMyLostItem,
   getAllFoundItem,
+  getAllClaimedItems,
+  closeLostAndFoundItem,
 } from "./lostAndFound.service";
 
 export const lostAndFoundController = async (
@@ -103,6 +105,23 @@ export const updateLostAndFoundItemController = async (
   }
 };
 
+export const closeLostAndFoundItemController = async (
+  req: Authenticate,
+  res: Response
+) => {
+  try {
+    const { id } = req.params;
+
+    const item = await closeLostAndFoundItem(id);
+
+    return res.status(200).json(item);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ error: "Failed to close lost and found item" });
+  }
+};
+
 export const claimLostAndFoundItemController = async (
   req: Authenticate,
   res: Response
@@ -141,5 +160,17 @@ export const getAllFoundItemController = async (
     return res.status(200).json(foundItems);
   } catch (error) {
     return res.status(500).json({ error: "Failed to get found items" });
+  }
+};
+
+export const getAllClaimedItemsController = async (
+  req: Authenticate,
+  res: Response
+) => {
+  try {
+    const claimedItems = await getAllClaimedItems();
+    return res.status(200).json(claimedItems);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to get claimed items" });
   }
 };

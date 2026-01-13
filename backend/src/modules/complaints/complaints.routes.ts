@@ -3,6 +3,7 @@ import { authenticate, authorize } from "../../middleware/auth";
 import {
   raiseComplaint,
   getMyComplaintsController,
+  getEscalatedComplaintsController,
 } from "./complaints.controller";
 
 const router = Router();
@@ -13,6 +14,13 @@ router.get(
   authenticate,
   authorize(["RESIDENT"]),
   getMyComplaintsController
+);
+
+router.get(
+  "/escalated",
+  authenticate,
+  authorize(["ADMIN"]),
+  getEscalatedComplaintsController
 );
 
 export default router;
