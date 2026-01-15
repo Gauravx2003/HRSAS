@@ -1,0 +1,1 @@
+ALTER TYPE "public"."gate_pass_type" ADD VALUE 'OVERNIGHT';

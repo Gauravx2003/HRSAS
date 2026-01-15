@@ -15,6 +15,8 @@ import lostAndFoundRoutes from "./modules/lostAndFound/lostAndFound.routes";
 import notificationsRoutes from "./modules/notifications/notifications.routes";
 import { runEscalationJob } from "./jobs/escalation.job";
 import noticesRoutes from "./modules/notices/notices.routes";
+import lateEntryExitRoutes from "./modules/lateEntryExit/lateEntryExit.routes";
+import visitorsRoutes from "./modules/visitors/visitors.routes";
 import cron from "node-cron";
 
 const app = express();
@@ -38,6 +40,8 @@ app.use("/api/complaints", attachmentsRoutes);
 app.use("/api/lost-and-found", lostAndFoundRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/notices", noticesRoutes);
+app.use("/api/late-entry-exit", lateEntryExitRoutes);
+app.use("/api/visitors", visitorsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

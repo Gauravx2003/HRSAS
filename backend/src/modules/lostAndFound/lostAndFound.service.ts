@@ -171,6 +171,8 @@ export const getAllClaimedItems = async () => {
 
   return claimedItems;
 };
+
+
 // export const lostAndFoundItems = pgTable("lost_and_found_items", {
 //   id: uuid("id").defaultRandom().primaryKey(),
 

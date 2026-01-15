@@ -22,6 +22,34 @@
       "when": 1767940983534,
       "tag": "0002_goofy_the_call",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1768370014142,
+      "tag": "0003_dizzy_talisman",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1768371847938,
+      "tag": "0004_strange_marrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1768379516488,
+      "tag": "0005_young_golden_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768459550900,
+      "tag": "0006_lovely_carlie_cooper",
+      "breakpoints": true
     }
   ]
 }

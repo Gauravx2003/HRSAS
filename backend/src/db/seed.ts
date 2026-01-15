@@ -15,105 +15,37 @@ import {
   complaintCategories,
 } from "./schema";
 
+import { eq } from "drizzle-orm";
+
 async function seed() {
   console.log("🌱 Seeding database...");
 
   // 1. Organization
   const [org] = await db
-    .insert(organizations)
-    .values({ name: "Demo College" })
-    .returning();
+    .select()
+    .from(organizations)
+    .where(eq(organizations.name, "Demo College"));
 
   // 2. Hostel
   const [hostel] = await db
-    .insert(hostels)
-    .values({
-      name: "Boys Hostel A",
-      organizationId: org.id,
-    })
-    .returning();
-
-  // 3. Block
-  const [block] = await db
-    .insert(blocks)
-    .values({
-      name: "Block A",
-      hostelId: hostel.id,
-    })
-    .returning();
-
-  // 4. Room
-  const [room] = await db
-    .insert(rooms)
-    .values({
-      blockId: block.id,
-      roomNumber: "101",
-      capacity: 2,
-    })
-    .returning();
+    .select()
+    .from(hostels)
+    .where(eq(hostels.name, "Boys Hostel A"));
 
   // Password hash
   const passwordHash = await bcrypt.hash("password123", 10);
 
-  // 5. Admin (Warden)
-  const [admin] = await db
+  const [security] = await db
     .insert(users)
     .values({
-      name: "Hostel Warden",
-      email: "admin@hostel.com",
+      name: "Hostel Security",
+      email: "security@hostel.com",
       passwordHash,
-      role: "ADMIN",
+      role: "SECURITY",
       organizationId: org.id,
       hostelId: hostel.id,
     })
     .returning();
-
-  // 6. Staff (Electrician)
-  const [staff] = await db
-    .insert(users)
-    .values({
-      name: "Electrician Ram",
-      email: "electrician@hostel.com",
-      passwordHash,
-      role: "STAFF",
-      organizationId: org.id,
-      hostelId: hostel.id,
-    })
-    .returning();
-
-  await db.insert(staffProfiles).values({
-    userId: staff.id,
-    staffType: "IN_HOUSE",
-    specialization: "Electrical",
-    maxActiveTasks: 5,
-  });
-
-  // 7. Resident
-  const [resident] = await db
-    .insert(users)
-    .values({
-      name: "Test Resident",
-      email: "resident@hostel.com",
-      passwordHash,
-      role: "RESIDENT",
-      organizationId: org.id,
-      hostelId: hostel.id,
-    })
-    .returning();
-
-  await db.insert(residentProfiles).values({
-    userId: resident.id,
-    roomId: room.id,
-    enrollmentNumber: "ENR001",
-  });
-
-  // 8. Complaint Categories
-  await db.insert(complaintCategories).values([
-    { name: "Electrical", slaHours: 24, vendorOnly: false },
-    { name: "Plumbing", slaHours: 24, vendorOnly: false },
-    { name: "Hygiene", slaHours: 12, vendorOnly: false },
-    { name: "IT", slaHours: 12, vendorOnly: false },
-  ]);
 
   console.log("✅ Seeding completed successfully");
   process.exit(0);

@@ -51,6 +51,27 @@ export const lostAndFoundTypeEnum = pgEnum("lost_and_found_type", [
   "FOUND",
 ]);
 
+export const gatePassTypeEnum = pgEnum("gate_pass_type", [
+  "ENTRY",
+  "EXIT",
+  "OVERNIGHT",
+]);
+
+export const messIssueCategoryEnum = pgEnum("mess_issue_category", [
+  "FOOD",
+  "SERVICE",
+  "HYGIENE",
+  "INFRASTRUCTURE",
+  "OTHER",
+]);
+
+export const messIssueStatusEnum = pgEnum("mess_issue_status", [
+  "OPEN",
+  "IN_REVIEW",
+  "RESOLVED",
+  "REJECTED",
+]);
+
 //Tables
 
 export const organizations = pgTable("organizations", {
@@ -176,6 +197,7 @@ export const lateEntryRequests = pgTable("late_entry_requests", {
     .references(() => users.id)
     .notNull(),
   reason: text("reason").notNull(),
+  type: gatePassTypeEnum("type").notNull(),
   fromTime: timestamp("from_time").notNull(),
   toTime: timestamp("to_time").notNull(),
   status: approvalStatusEnum("status").default("PENDING"),
@@ -187,7 +209,12 @@ export const visitorRequests = pgTable("visitor_requests", {
   residentId: uuid("resident_id")
     .references(() => users.id)
     .notNull(),
+
+  // New Fields for Authenticity
   visitorName: varchar("visitor_name", { length: 100 }).notNull(),
+  visitorPhone: varchar("visitor_phone", { length: 15 }).notNull(),
+  entryCode: varchar("entry_code", { length: 6 }).notNull(), // 6-digit Security Code
+
   visitDate: timestamp("visit_date").notNull(),
   status: approvalStatusEnum("status").default("PENDING"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -270,4 +297,21 @@ export const notifications = pgTable("notifications", {
   isRead: boolean("is_read").default(false).notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const messIssues = pgTable("mess_issues", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+
+  issueTitle: varchar("issue_title", { length: 255 }).notNull(),
+  issueDescription: text("issue_description").notNull(),
+
+  status: messIssueStatusEnum("status").default("OPEN"),
+  adminResponse: text("admin_response"),
+  resolvedAt: timestamp("resolved_at"),
+
+  createdAt: timestamp("created_at").defaultNow(),
 });

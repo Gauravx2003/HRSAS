@@ -10,6 +10,9 @@ const StaffSidebar = () => {
         <li>
           <Link to="/staff/notices">Notices</Link>
         </li>
+        <li>
+          <Link to="/staff/complaints">Assigned Complaints</Link>
+        </li>
       </ul>
     </nav>
   );

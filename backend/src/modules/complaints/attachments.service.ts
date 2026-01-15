@@ -1,6 +1,7 @@
 import cloudinary from "../../config/cloudinary";
 import { db } from "../../db";
-import { complaintAttachments } from "../../db/schema";
+import { complaintAttachments, complaints } from "../../db/schema";
+import { eq } from "drizzle-orm";
 
 export const uploadAttachment = async (
   files: Express.Multer.File[],
@@ -8,6 +9,15 @@ export const uploadAttachment = async (
   complaintId: string
 ) => {
   const uploadedFiles = [];
+
+  const createdby = await db
+    .select({ residentId: complaints.residentId })
+    .from(complaints)
+    .where(eq(complaints.id, complaintId));
+
+  if (createdby[0].residentId !== uploadedBy) {
+    throw new Error("Unauthorized");
+  }
 
   for (const file of files) {
     const result = await new Promise<any>((resolve, reject) => {
