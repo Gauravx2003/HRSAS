@@ -82,7 +82,7 @@ const FoundItems = () => {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-3">
           {foundItems.map((item) => (
             <div
               key={item.id}
@@ -92,7 +92,7 @@ const FoundItems = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                      item.status
+                      item.status,
                     )}`}
                   >
                     {item.status === "CLAIMED" && (

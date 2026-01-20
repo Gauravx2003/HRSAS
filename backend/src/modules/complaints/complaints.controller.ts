@@ -21,7 +21,7 @@ export const raiseComplaint = async (req: Authenticate, res: Response) => {
       roomId,
       categoryId,
       description,
-      title
+      title,
     );
 
     return res.status(201).json(complaint);
@@ -33,7 +33,7 @@ export const raiseComplaint = async (req: Authenticate, res: Response) => {
 
 export const getMyComplaintsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const myComplaints = await getMyComplaints(req.user!.userId);
@@ -46,7 +46,7 @@ export const getMyComplaintsController = async (
 
 export const getEscalatedComplaintsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const escalatedComplaints = await getEscalatedComplaints();
@@ -59,7 +59,7 @@ export const getEscalatedComplaintsController = async (
 
 export const getComplaintCategoriesController = async (
   req: Request,
-  res: Response
+  res: Response,
 ) => {
   try {
     const categories = await getAllComplaintCategories();
@@ -72,20 +72,17 @@ export const getComplaintCategoriesController = async (
 
 export const reassignComplaintController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
-    const { complaintId, newStaffId } = req.body;
+    const { id } = req.params;
+    const { newStaffId } = req.body;
 
-    if (!complaintId || !newStaffId) {
+    if (!id || !newStaffId) {
       return res.status(400).json({ message: "Bad Request" });
     }
 
-    const complaint = await reassignComplaint(
-      complaintId,
-      newStaffId,
-      req.user!.userId
-    );
+    const complaint = await reassignComplaint(id, newStaffId, req.user!.userId);
 
     return res.status(200).json(complaint);
   } catch (error) {

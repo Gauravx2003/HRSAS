@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
-import AttachmentsUpload from "../../components/AttachmentsUpload";
-import { AlertCircle, CheckCircle2, Clock, FileText, Plus } from "lucide-react";
+//import AttachmentsUpload from "../../components/AttachmentsUpload";
+import { FileText, Plus } from "lucide-react";
 import RaiseComplaintModal from "../../components/RaiseComplaintModal";
+import StatusCard from "../../components/common/StatusCard";
 
 interface Complaint {
   id: string;
@@ -39,41 +40,6 @@ const MyComplaints = () => {
 
   //console.log(complaints);
 
-  const getStatusColor = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "RESOLVED":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "REJECTED":
-        return "bg-red-100 text-red-700 border-red-200";
-      case "IN_PROGRESS":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      default:
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toUpperCase()) {
-      case "RESOLVED":
-        return <CheckCircle2 className="w-3 h-3 mr-1" />;
-      case "REJECTED":
-        return <AlertCircle className="w-3 h-3 mr-1" />;
-      default:
-        return <Clock className="w-3 h-3 mr-1" />;
-    }
-  };
-
-  // <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-  //       <div>
-  //         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-  //           My Lost Items
-  //         </h1>
-  //         <p className="text-sm text-slate-500 mt-1">
-  //           Track status of items you have reported lost
-  //         </p>
-  //       </div>
-  //     </div>
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -105,56 +71,35 @@ const MyComplaints = () => {
           <p className="text-slate-600">No complaints yet</p>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-4">
           {complaints.map((complaint) => (
-            <div
+            <StatusCard
               key={complaint.id}
-              className="bg-white rounded-lg border border-slate-200 p-4 hover:border-slate-300 transition-colors"
+              id={complaint.id}
+              title={complaint.title}
+              description={complaint.description}
+              status={complaint.status}
+              createdAt={complaint.createdAt}
+              uploadUrl={`/complaints/${complaint.id}/attachments`} // Specific URL
+              onSuccess={fetchComplaints}
             >
-              <div className="flex justify-between items-start mb-3">
-                <span
-                  className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                    complaint.status
-                  )}`}
-                >
-                  {getStatusIcon(complaint.status)}
-                  {complaint.status}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {new Date(complaint.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-
-              <h3 className="font-semibold text-slate-900 mb-2">
-                {complaint.title}
-              </h3>
-
-              <div className="flex gap-2 mb-3 text-xs">
+              {/* --- CHILD CONTENT: Specific to Complaints --- */}
+              <div className="flex gap-2 text-xs">
                 <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded">
                   {complaint.categoryName}
                 </span>
                 {complaint.staffName ? (
-                  <span className="text-blue-700 px-2 py-1 rounded">
+                  <span className="text-blue-700 bg-blue-50 px-2 py-1 rounded">
                     Assigned to: {complaint.staffName}
                   </span>
                 ) : (
-                  <span className="text-blue-700 px-2 py-1 rounded">
+                  <span className="text-slate-500 bg-slate-50 px-2 py-1 rounded">
                     Not assigned
                   </span>
                 )}
               </div>
-
-              <p className="text-sm text-slate-600 mb-4 line-clamp-2">
-                {complaint.description}
-              </p>
-
-              <AttachmentsUpload
-                uploadUrl={`/complaints/${complaint.id}/attachments`}
-                onSuccess={() => {
-                  fetchComplaints();
-                }}
-              />
-            </div>
+              {/* --------------------------------------------- */}
+            </StatusCard>
           ))}
         </div>
       )}

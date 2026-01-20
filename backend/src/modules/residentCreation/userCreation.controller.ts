@@ -1,13 +1,13 @@
 import { Authenticate } from "../../middleware/auth";
 import { Response } from "express";
-import { createResident } from "./residentCreation.service";
+import { createResident, createStaff } from "./userCreation.service";
 import { blocks, hostels, rooms } from "../../db/schema";
 import { eq, lt, and } from "drizzle-orm";
 import { db } from "../../db";
 
 export const createResidentController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { adminUser, residentData } = req.body;
@@ -21,7 +21,7 @@ export const createResidentController = async (
 
 export const getHostelBlocksController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { hostelId } = req.params;
@@ -38,7 +38,7 @@ export const getHostelBlocksController = async (
 
 export const getBlockRoomsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { blockId } = req.params;
@@ -48,13 +48,35 @@ export const getBlockRoomsController = async (
       .where(
         and(
           eq(rooms.blockId, blockId),
-          lt(rooms.currentOccupancy, rooms.capacity)
-        )
+          lt(rooms.currentOccupancy, rooms.capacity),
+        ),
       );
 
     res.status(200).json(room);
   } catch (error) {
     console.error("Error getting block rooms:", error);
     res.status(500).json({ error: "Failed to get block rooms" });
+  }
+};
+
+export const createStaffController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const { adminUser, staffData } = req.body;
+
+    if (
+      staffData.staffType !== "IN_HOUSE" &&
+      staffData.staffType !== "VENDOR"
+    ) {
+      throw new Error("Invalid staff type");
+    }
+
+    const staff = await createStaff(adminUser, staffData);
+    res.status(201).json(staff);
+  } catch (error) {
+    console.error("Error creating staff:", error);
+    res.status(500).json({ error: "Failed to create staff" });
   }
 };

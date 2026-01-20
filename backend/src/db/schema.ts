@@ -10,6 +10,8 @@ import {
   pgEnum,
 } from "drizzle-orm/pg-core";
 
+import { MESS_ISSUE_CATEGORIES } from "../../../shared/constants";
+
 export const roleEnum = pgEnum("role", [
   "RESIDENT",
   "STAFF",
@@ -57,13 +59,10 @@ export const gatePassTypeEnum = pgEnum("gate_pass_type", [
   "OVERNIGHT",
 ]);
 
-export const messIssueCategoryEnum = pgEnum("mess_issue_category", [
-  "FOOD",
-  "SERVICE",
-  "HYGIENE",
-  "INFRASTRUCTURE",
-  "OTHER",
-]);
+export const messIssueCategoryEnum = pgEnum(
+  "mess_issue_category",
+  MESS_ISSUE_CATEGORIES,
+);
 
 export const messIssueStatusEnum = pgEnum("mess_issue_status", [
   "OPEN",
@@ -146,7 +145,7 @@ export const complaintCategories = pgTable("complaint_categories", {
   vendorOnly: boolean("vendor_only").default(false),
 });
 
-export const  complaints = pgTable("complaints", {
+export const complaints = pgTable("complaints", {
   id: uuid("id").defaultRandom().primaryKey(),
   residentId: uuid("resident_id")
     .references(() => users.id)

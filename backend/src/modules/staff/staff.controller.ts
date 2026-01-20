@@ -1,11 +1,14 @@
 import { Authenticate } from "../../middleware/auth";
 import { getAssignedComplaints } from "./staff.service";
-import { Response } from "express";
-import { updateComplaintStatus } from "./staff.service";
+import { Request, Response } from "express";
+import {
+  updateComplaintStatus,
+  getStaffBySpecialization,
+} from "./staff.service";
 
 export const getAssignedComplaintsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const conplaints = await getAssignedComplaints(req.user!.userId);
@@ -18,7 +21,7 @@ export const getAssignedComplaintsController = async (
 
 export const updateComplaintStatusController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { status } = req.body;
@@ -27,9 +30,28 @@ export const updateComplaintStatusController = async (
     const updatedComplaint = await updateComplaintStatus(
       id,
       status,
-      req.user!.userId
+      req.user!.userId,
     );
     return res.status(200).json(updatedComplaint);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getStaffBySpecializationController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const { specialization } = req.query;
+
+    if (!specialization || typeof specialization !== "string") {
+      return res.status(400).json({ message: "Specialization is required" });
+    }
+
+    const staff = await getStaffBySpecialization(specialization);
+    return res.status(200).json(staff);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });

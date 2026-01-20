@@ -4,14 +4,16 @@ import StaffSidebar from "./StaffSidebar";
 
 export default function StaffLayout() {
   return (
-    <>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <TopBar />
-      <div style={{ display: "flex" }}>
+      <div className="flex flex-1">
         <StaffSidebar />
-        <div style={{ padding: "16px", flex: 1 }}>
-          <Outlet />
-        </div>
+        <main className="flex-1 p-6 lg:p-8 w-full">
+          <div className="max-w-6xl mx-auto space-y-6">
+            <Outlet />
+          </div>
+        </main>
       </div>
-    </>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Upload, Loader2, Building, MapPin } from "lucide-react";
+import { Upload, Building, MapPin, FileText } from "lucide-react";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../store/slices/authSlice";
 import {
@@ -8,6 +8,8 @@ import {
   uploadComplaintAttachment,
   type ComplaintCategory,
 } from "../services/complaint.service";
+import FormModal from "./common/FormModal";
+import { X } from "lucide-react";
 
 interface RaiseComplaintModalProps {
   onClose: () => void;
@@ -64,7 +66,7 @@ const RaiseComplaintModal = ({
         title,
         description,
         categoryId,
-        user.roomId
+        user.roomId,
       );
 
       // 2. Upload Attachment if exists
@@ -82,163 +84,132 @@ const RaiseComplaintModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-slate-100">
-          <h2 className="text-xl font-bold text-slate-800">Raise Complaint</h2>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-100 rounded-full"
-          >
-            <X className="w-5 h-5" />
-          </button>
+  // User Info Header Content
+  const userInfoContent = (
+    <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+          Block
+        </label>
+        <div className="flex items-center text-slate-700 font-medium">
+          <Building className="w-4 h-4 mr-2 text-indigo-500" />
+          {user?.blockName || "N/A"}
         </div>
-
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* User Details Read-only */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
-                Block
-              </label>
-              <div className="flex items-center text-slate-700 font-medium">
-                <Building className="w-4 h-4 mr-2 text-indigo-500" />
-                {user?.blockName || "N/A"}
-              </div>
-            </div>
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
-                Room Number
-              </label>
-              <div className="flex items-center text-slate-700 font-medium">
-                <MapPin className="w-4 h-4 mr-2 text-indigo-500" />
-                {user?.roomNumber || "N/A"}
-              </div>
-            </div>
-          </div>
-
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Title
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-              placeholder="Brief summary of the issue"
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Category
-            </label>
-            <select
-              required
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              disabled={isLoadingCategories}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Description
-            </label>
-            <textarea
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
-              placeholder="Detailed description of the problem..."
-            />
-          </div>
-
-          {/* Attachment */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Attachment (Optional)
-            </label>
-            <div className="relative">
-              <input
-                type="file"
-                id="file-upload"
-                className="hidden"
-                onChange={handleFileChange}
-                accept="image/*,.pdf,.doc,.docx"
-              />
-              <label
-                htmlFor="file-upload"
-                className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-xl hover:border-indigo-500 hover:bg-slate-50 transition-all cursor-pointer group"
-              >
-                {file ? (
-                  <span className="text-sm font-medium text-indigo-600 truncate">
-                    {file.name}
-                  </span>
-                ) : (
-                  <div className="flex items-center text-sm text-slate-500 group-hover:text-slate-600">
-                    <Upload className="w-4 h-4 mr-2" />
-                    <span>Click to upload file</span>
-                  </div>
-                )}
-              </label>
-              {file && (
-                <button
-                  type="button"
-                  onClick={() => setFile(null)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Footer Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1 py-2.5 px-4 bg-white border border-slate-300 rounded-xl text-slate-700 font-semibold hover:bg-slate-50 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Raise Complaint"
-              )}
-            </button>
-          </div>
-        </form>
+      </div>
+      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+          Room Number
+        </label>
+        <div className="flex items-center text-slate-700 font-medium">
+          <MapPin className="w-4 h-4 mr-2 text-indigo-500" />
+          {user?.roomNumber || "N/A"}
+        </div>
       </div>
     </div>
+  );
+
+  return (
+    <FormModal
+      isOpen={true}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      title="Raise Complaint"
+      icon={FileText}
+      isSubmitting={isSubmitting}
+      submitButtonText="Raise Complaint"
+      headerContent={userInfoContent}
+    >
+      {/* Title */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Title
+        </label>
+        <input
+          type="text"
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+          placeholder="Brief summary of the issue"
+        />
+      </div>
+
+      {/* Category */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Category
+        </label>
+        <select
+          required
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          disabled={isLoadingCategories}
+          className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
+        >
+          <option value="">Select a category</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Description
+        </label>
+        <textarea
+          required
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={4}
+          className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
+          placeholder="Detailed description of the problem..."
+        />
+      </div>
+
+      {/* Attachment */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">
+          Attachment (Optional)
+        </label>
+        <div className="relative">
+          <input
+            type="file"
+            id="file-upload"
+            className="hidden"
+            onChange={handleFileChange}
+            accept="image/*,.pdf,.doc,.docx"
+          />
+          <label
+            htmlFor="file-upload"
+            className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-slate-300 rounded-xl hover:border-indigo-500 hover:bg-slate-50 transition-all cursor-pointer group"
+          >
+            {file ? (
+              <span className="text-sm font-medium text-indigo-600 truncate">
+                {file.name}
+              </span>
+            ) : (
+              <div className="flex items-center text-sm text-slate-500 group-hover:text-slate-600">
+                <Upload className="w-4 h-4 mr-2" />
+                <span>Click to upload file</span>
+              </div>
+            )}
+          </label>
+          {file && (
+            <button
+              type="button"
+              onClick={() => setFile(null)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    </FormModal>
   );
 };
 

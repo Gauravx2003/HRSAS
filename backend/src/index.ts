@@ -18,7 +18,7 @@ import noticesRoutes from "./modules/notices/notices.routes";
 import lateEntryExitRoutes from "./modules/lateEntryExit/lateEntryExit.routes";
 import visitorsRoutes from "./modules/visitors/visitors.routes";
 import messIssueRoutes from "./modules/messIssue/messIssue.routes";
-import residentCreationRoutes from "./modules/residentCreation/residentCreation.routes";
+import userCreationRoutes from "./modules/residentCreation/userCreation.routes";
 import cron from "node-cron";
 
 const app = express();
@@ -30,7 +30,7 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "OK" });
 });
 
-// cron.schedule("*/10 * * * *", () => {
+// cron.schedule("* * * * *", () => {
 //   runEscalationJob().catch(console.error);
 // });
 
@@ -45,7 +45,7 @@ app.use("/api/notices", noticesRoutes);
 app.use("/api/late-entry-exit", lateEntryExitRoutes);
 app.use("/api/visitors", visitorsRoutes);
 app.use("/api/mess-issues", messIssueRoutes);
-app.use("/api/resident-creation", residentCreationRoutes);
+app.use("/api/user-creation", userCreationRoutes);
 
 const PORT = process.env.PORT || 5000;
 

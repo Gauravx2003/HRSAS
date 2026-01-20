@@ -3,6 +3,7 @@ import {
   createMessComplaintController,
   updateMessComplaintController,
   getAllMessIssuesController,
+  getMyMessIssuesController,
 } from "./messIssue.controller";
 import { authenticate, authorize } from "../../middleware/auth";
 
@@ -12,21 +13,28 @@ router.post(
   "/create",
   authenticate,
   authorize(["RESIDENT"]),
-  createMessComplaintController
+  createMessComplaintController,
 );
 
 router.get(
   "/",
   authenticate,
-  authorize(["ADMIN", "STAFF"]),
-  getAllMessIssuesController
+  authorize(["ADMIN", "RESIDENT", "STAFF"]),
+  getAllMessIssuesController,
+);
+
+router.get(
+  "/my",
+  authenticate,
+  authorize(["RESIDENT"]),
+  getMyMessIssuesController,
 );
 
 router.patch(
   "/update/:id",
   authenticate,
   authorize(["ADMIN"]),
-  updateMessComplaintController
+  updateMessComplaintController,
 );
 
 export default router;

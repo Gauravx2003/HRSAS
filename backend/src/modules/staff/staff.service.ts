@@ -23,7 +23,7 @@ export const getAssignedComplaints = async (staffId: string) => {
     .from(complaints)
     .innerJoin(
       complaintCategories,
-      eq(complaintCategories.id, complaints.categoryId)
+      eq(complaintCategories.id, complaints.categoryId),
     )
     .where(eq(complaints.assignedStaff, staffId));
 };
@@ -31,7 +31,7 @@ export const getAssignedComplaints = async (staffId: string) => {
 export const updateComplaintStatus = async (
   complaintId: string,
   status: "IN_PROGRESS" | "RESOLVED",
-  staffId: string
+  staffId: string,
 ) => {
   return await db.transaction(async (tx) => {
     const [complaint] = await tx
@@ -47,7 +47,7 @@ export const updateComplaintStatus = async (
       await createNotification(
         tx,
         complaint.residentId,
-        "Your complaint is in progress"
+        "Your complaint is in progress",
       );
     }
 
@@ -59,4 +59,17 @@ export const updateComplaintStatus = async (
 
     return updated;
   });
+};
+
+export const getStaffBySpecialization = async (specialization: string) => {
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      specialization: staffProfiles.specialization,
+    })
+    .from(users)
+    .innerJoin(staffProfiles, eq(staffProfiles.userId, users.id))
+    .where(eq(staffProfiles.specialization, specialization));
 };

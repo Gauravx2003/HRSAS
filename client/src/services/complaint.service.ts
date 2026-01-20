@@ -17,7 +17,7 @@ export const createComplaint = async (
   title: string,
   description: string,
   categoryId: string,
-  roomId: string
+  roomId: string,
 ) => {
   const response = await api.post("/complaints", {
     title,
@@ -30,7 +30,7 @@ export const createComplaint = async (
 
 export const uploadComplaintAttachment = async (
   complaintId: string,
-  file: File
+  file: File,
 ) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -41,7 +41,33 @@ export const uploadComplaintAttachment = async (
       headers: {
         "Content-Type": "multipart/form-data",
       },
-    }
+    },
   );
+  return response.data;
+};
+
+export const reassignComplaint = async (
+  complaintId: string,
+  newStaffId: string,
+) => {
+  const response = await api.patch(`/complaints/reassign/${complaintId}`, {
+    newStaffId,
+  });
+  return response.data;
+};
+
+export interface Staff {
+  id: string;
+  name: string;
+  email: string;
+  specialization: string;
+}
+
+export const getStaffBySpecialization = async (
+  categoryName: string,
+): Promise<Staff[]> => {
+  const response = await api.get("/staff/by-specialization", {
+    params: { specialization: categoryName },
+  });
   return response.data;
 };

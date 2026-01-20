@@ -15,6 +15,7 @@ import MyComplaints from "./pages/resident/MyComplaints";
 import MyLostItems from "./pages/resident/MyLostItems";
 import AssignedComplaints from "./pages/staff/AssignedComplaints";
 import FoundItems from "./pages/resident/FoundItems";
+import MessIssues from "./pages/resident/MessIssues";
 
 const App = () => {
   return (
@@ -71,6 +72,7 @@ const App = () => {
           <Route path="complaints" element={<MyComplaints />} />
           <Route path="lost-items" element={<MyLostItems />} />
           <Route path="found-items" element={<FoundItems />} />
+          <Route path="mess-issues" element={<MessIssues />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -13,8 +13,8 @@ export const runEscalationJob = async () => {
     .where(
       and(
         inArray(complaints.status, ["CREATED", "ASSIGNED", "IN_PROGRESS"]),
-        lt(complaints.slaDeadline, sql`NOW()`)
-      )
+        lt(complaints.slaDeadline, sql`NOW()`),
+      ),
     );
 
   console.log(overdueComplaints);

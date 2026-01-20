@@ -6,11 +6,17 @@ import {
   getMessIssues,
 } from "./messIssue.service";
 
-import { messIssueCategoryEnum, messIssueStatusEnum } from "../../db/schema";
+import {
+  messIssueCategoryEnum,
+  messIssueStatusEnum,
+  messIssues,
+} from "../../db/schema";
+import { db } from "../../db";
+import { eq } from "drizzle-orm";
 
 export const createMessComplaintController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { issueTitle, issueDescription, category } = req.body;
@@ -30,7 +36,7 @@ export const createMessComplaintController = async (
       issueTitle,
       issueDescription,
       userId,
-      category
+      category,
     );
     return res.status(201).json(newIssue);
   } catch (error) {
@@ -40,7 +46,7 @@ export const createMessComplaintController = async (
 
 export const updateMessComplaintController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { id } = req.params;
@@ -67,11 +73,27 @@ export const updateMessComplaintController = async (
 
 export const getAllMessIssuesController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { status } = req.query;
     const issues = await getMessIssues(status as string);
+    return res.status(200).json(issues);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to fetch mess issues" });
+  }
+};
+
+export const getMyMessIssuesController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const issues = await db
+      .select()
+      .from(messIssues)
+      .where(eq(messIssues.userId, req.user!.userId));
     return res.status(200).json(issues);
   } catch (error) {
     console.error(error);

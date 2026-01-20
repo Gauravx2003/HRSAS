@@ -28,7 +28,7 @@ router.get(
 );
 
 router.patch(
-  "/reassign",
+  "/reassign/:id",
   authenticate,
   authorize(["ADMIN"]),
   reassignComplaintController

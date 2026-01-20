@@ -4,29 +4,37 @@ import {
   createResidentController,
   getHostelBlocksController,
   getBlockRoomsController,
-} from "./residentCreation.controller";
+  createStaffController,
+} from "./userCreation.controller";
 
 const router = Router();
 
 router.post(
-  "/create",
+  "/resident",
   authenticate,
   authorize(["ADMIN"]),
-  createResidentController
+  createResidentController,
 );
 
 router.get(
   "/hostelBlocks/:hostelId",
   authenticate,
   authorize(["ADMIN"]),
-  getHostelBlocksController
+  getHostelBlocksController,
 );
 
 router.get(
   "/blockRooms/:blockId",
   authenticate,
   authorize(["ADMIN"]),
-  getBlockRoomsController
+  getBlockRoomsController,
+);
+
+router.post(
+  "/staff",
+  authenticate,
+  authorize(["ADMIN"]),
+  createStaffController,
 );
 
 export default router;
