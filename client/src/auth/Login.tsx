@@ -30,7 +30,7 @@ const Login = () => {
       //dispatch setCredentials
       dispatch(setCredentials({ user, token }));
 
-      console.log(user);
+      //console.log(user);
 
       if (user.role === "ADMIN") {
         navigate("/admin");

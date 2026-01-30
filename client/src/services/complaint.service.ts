@@ -33,7 +33,7 @@ export const uploadComplaintAttachment = async (
   file: File,
 ) => {
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("images", file);
   const response = await api.post(
     `/complaints/${complaintId}/attachments`,
     formData,

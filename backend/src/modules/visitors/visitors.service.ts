@@ -15,7 +15,7 @@ export const createRequest = async (
   visitorName: string,
   visitorPhone: string,
   visitDate: Date,
-  residentId: string
+  residentId: string,
 ) => {
   const entryCode = generateEntryCode();
 
@@ -34,12 +34,21 @@ export const createRequest = async (
   return newRequest;
 };
 
-export const getMyVisitorRequests = async (residentId: string) => {
-  const requests = await db
+export const getMyVisitorRequests = async (
+  residentId: string,
+  status?: "PENDING" | "APPROVED" | "REJECTED",
+) => {
+  let query = db
     .select()
     .from(visitorRequests)
-    .where(eq(visitorRequests.residentId, residentId))
     .orderBy(desc(visitorRequests.visitDate));
+  query.where(eq(visitorRequests.residentId, residentId));
+
+  if (status) {
+    query.where(eq(visitorRequests.status, status));
+  }
+
+  const requests = await query;
   return requests;
 };
 
@@ -58,7 +67,7 @@ export const getPendingRequests = async () => {
 
 export const updateVisitorRequest = async (
   id: string,
-  status: "APPROVED" | "REJECTED"
+  status: "APPROVED" | "REJECTED",
 ) => {
   const [updatedRequest] = await db
     .update(visitorRequests)
@@ -90,8 +99,8 @@ export const getTodaysVisitors = async () => {
     .where(
       and(
         eq(visitorRequests.status, "APPROVED"),
-        sql`DATE(${visitorRequests.visitDate}) = ${todaysDate}`
-      )
+        sql`DATE(${visitorRequests.visitDate}) = ${todaysDate}`,
+      ),
     );
 
   return todaysVisitors;

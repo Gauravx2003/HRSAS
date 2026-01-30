@@ -1,6 +1,11 @@
 import { db } from "../../db";
-import { lateEntryRequests, users } from "../../db/schema";
-import { desc, eq, gte, and, getTableColumns } from "drizzle-orm";
+import {
+  lateEntryRequests,
+  residentProfiles,
+  rooms,
+  users,
+} from "../../db/schema";
+import { desc, eq, gte, and, getTableColumns, lte } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
 export const createRequest = async (
@@ -8,7 +13,7 @@ export const createRequest = async (
   type: "ENTRY" | "EXIT" | "OVERNIGHT",
   reason: string,
   fromTime: Date,
-  toTime: Date
+  toTime: Date,
 ) => {
   try {
     const [newRequest] = await db
@@ -50,9 +55,12 @@ export const getPendingRequests = async () => {
       .select({
         ...getTableColumns(lateEntryRequests),
         residentName: users.name,
+        residentRoom: rooms.roomNumber,
       })
       .from(lateEntryRequests)
       .leftJoin(users, eq(lateEntryRequests.residentId, users.id))
+      .leftJoin(residentProfiles, eq(users.id, residentProfiles.userId))
+      .leftJoin(rooms, eq(residentProfiles.roomId, rooms.id))
       .where(eq(lateEntryRequests.status, "PENDING"))
       .orderBy(desc(lateEntryRequests.createdAt));
     return requests;
@@ -64,7 +72,7 @@ export const getPendingRequests = async () => {
 
 export const updateRequest = async (
   id: string,
-  status: "APPROVED" | "REJECTED"
+  status: "APPROVED" | "REJECTED",
 ) => {
   try {
     const [updatedRequest] = await db
@@ -79,38 +87,22 @@ export const updateRequest = async (
   }
 };
 
-export const getSecurityDashboard = async () => {
+export const getApprovedRequests = async () => {
   const now = new Date();
 
   const result = await db
     .select({
       ...getTableColumns(lateEntryRequests),
       residentName: users.name,
+      residentRoomNumber: rooms.roomNumber,
     })
     .from(lateEntryRequests)
     .leftJoin(users, eq(lateEntryRequests.residentId, users.id))
-    .where(
-      and(
-        eq(lateEntryRequests.status, "APPROVED"),
-        gte(lateEntryRequests.toTime, sql`NOW()`)
-      )
-    );
+    .leftJoin(residentProfiles, eq(users.id, residentProfiles.userId))
+    .leftJoin(rooms, eq(residentProfiles.roomId, rooms.id))
+    .where(eq(lateEntryRequests.status, "APPROVED"));
+
+  console.log("result", result);
 
   return result;
 };
-
-// Add this enum if not exists, or just use text
-// export const gatePassTypeEnum = pgEnum("gate_pass_type", ["LATE_ENTRY", "EARLY_EXIT", "OVERNIGHT"]);
-
-// export const lateEntryRequests = pgTable("late_entry_requests", {
-//   id: uuid("id").defaultRandom().primaryKey(),
-//   residentId: uuid("resident_id")
-//     .references(() => users.id)
-//     .notNull(),
-//   type: gatePassTypeEnum("type").notNull(), // <--- RECOMMENDED ADDITION
-//   reason: text("reason").notNull(),
-//   fromTime: timestamp("from_time").notNull(), // When they leave / Validity start
-//   toTime: timestamp("to_time").notNull(),     // When they return / Validity end
-//   status: approvalStatusEnum("status").default("PENDING"),
-//   createdAt: timestamp("created_at").defaultNow(),
-// });

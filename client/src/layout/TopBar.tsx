@@ -16,6 +16,8 @@ const TopBar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
+  console.log(user);
+
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
@@ -59,7 +61,7 @@ const TopBar = () => {
       await markNotificationAsRead(id);
       // Optimistic update
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
       );
     } catch (err) {
       console.error("Failed to mark notification as read", err);
@@ -85,10 +87,10 @@ const TopBar = () => {
             </div>
             <div className="ml-3 hidden md:block">
               <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">
-                Hostel Services
+                HABITAT
               </h1>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Academic Portal
+                {user?.role === "RESIDENT" ? "Resident" : "Admin"} Portal
               </p>
             </div>
           </div>

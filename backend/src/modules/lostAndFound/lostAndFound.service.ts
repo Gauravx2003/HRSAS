@@ -8,27 +8,52 @@ import { createNotification } from "../notifications/notifications.service";
 import { eq, and } from "drizzle-orm";
 
 export const createLostAndFoundItem = async (
-  title: string,
-  description: string,
-  type: "LOST" | "FOUND",
-  reportedBy: string,
-  lostDate?: Date,
-  lostLocation?: string,
-  foundDate?: Date,
-  foundLocation?: string
+  userId: string,
+  userRole: "ADMIN" | "RESIDENT",
+  data: {
+    title: string;
+    description: string;
+    foundDate?: Date;
+    foundLocation?: string;
+    lostDate?: Date;
+    lostLocation?: string;
+    reportedByEmail?: string | null; // null means admin is the reporter
+  },
 ) => {
   try {
+    let reporterId = userId; // Default to admin
+    let type: "LOST" | "FOUND";
+
+    // If email is provided, find the user
+    if (userRole == "ADMIN") {
+      type = "FOUND";
+      if (data.reportedByEmail) {
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, data.reportedByEmail))
+          .limit(1);
+
+        if (!user) {
+          throw new Error("User with this email not found");
+        }
+        reporterId = user.id;
+      }
+    } else {
+      type = "LOST";
+    }
+
     const [record] = await db
       .insert(lostAndFoundItems)
       .values({
-        title,
-        description,
+        title: data.title,
+        description: data.description,
         type,
-        reportedBy,
-        lostDate,
-        lostLocation,
-        foundDate,
-        foundLocation,
+        reportedBy: reporterId,
+        foundDate: type === "FOUND" ? data.foundDate : null,
+        foundLocation: type === "FOUND" ? data.foundLocation : null,
+        lostDate: type === "LOST" ? data.lostDate : null,
+        lostLocation: type === "LOST" ? data.lostLocation : null,
         status: "OPEN",
       })
       .returning();
@@ -40,30 +65,59 @@ export const createLostAndFoundItem = async (
   }
 };
 
-export const updateLostAndFoundItem = async (
+export const updateLostItem = async (
   itemId: string,
-  type: "LOST" | "FOUND",
-  foundDate?: Date,
-  foundLocation?: string,
-  status?: "OPEN" | "CLAIMED" | "CLOSED"
+  foundDate: Date,
+  foundLocation: string,
 ) => {
-  try {
-    const [record] = await db
-      .update(lostAndFoundItems)
-      .set({ type, foundDate, foundLocation, status })
-      .where(
-        and(
-          eq(lostAndFoundItems.id, itemId),
-          eq(lostAndFoundItems.type, "LOST")
-        )
-      )
-      .returning();
+  const [item] = await db
+    .select()
+    .from(lostAndFoundItems)
+    .where(eq(lostAndFoundItems.id, itemId));
 
-    return record;
-  } catch (err) {
-    console.error("DB update failed:", err);
-    throw err;
+  if (!item) {
+    throw new Error("Item not found");
   }
+
+  if (item.type == "FOUND") {
+    throw new Error("Item is already marked as found");
+  }
+
+  const [record] = await db
+    .update(lostAndFoundItems)
+    .set({
+      foundDate,
+      foundLocation,
+      type: "FOUND",
+    })
+    .where(eq(lostAndFoundItems.id, itemId))
+    .returning();
+  return record;
+};
+
+export const openClaimedItem = async (itemId: string) => {
+  const [item] = await db
+    .select()
+    .from(lostAndFoundItems)
+    .where(eq(lostAndFoundItems.id, itemId));
+
+  if (!item) {
+    throw new Error("Item not found");
+  }
+
+  if (item.status !== "CLAIMED") {
+    throw new Error("Item is not claimed");
+  }
+
+  const [record] = await db
+    .update(lostAndFoundItems)
+    .set({
+      status: "OPEN",
+    })
+    .where(eq(lostAndFoundItems.id, itemId))
+    .returning();
+
+  return record;
 };
 
 export const closeLostAndFoundItem = async (itemId: string) => {
@@ -83,7 +137,7 @@ export const closeLostAndFoundItem = async (itemId: string) => {
 
 export const claimLostAndFoundItem = async (
   itemId: string,
-  claimerId: string
+  claimerId: string,
 ) => {
   // 1. START THE TRANSACTION
   return await db.transaction(async (tx) => {
@@ -115,7 +169,7 @@ export const claimLostAndFoundItem = async (
       await createNotification(
         tx, // <--- Now this works because 'tx' is defined above
         admin.id,
-        "Item claimed and requires verification"
+        "Item claimed and requires verification",
       );
     }
 
@@ -134,21 +188,32 @@ export const claimLostAndFoundItem = async (
 };
 
 export const getMyLostItem = async (userId: string) => {
-  try {
-    const myLostItems = await db
-      .select()
-      .from(lostAndFoundItems)
-      .where(
-        and(
-          eq(lostAndFoundItems.reportedBy, userId),
-          eq(lostAndFoundItems.type, "LOST")
-        )
-      );
-    return myLostItems;
-  } catch (error) {
-    console.error("DB select failed:", error);
-    throw error;
-  }
+  const { lostFoundAttachments } = await import("../../db/schema");
+
+  const myLostItems = await db
+    .select()
+    .from(lostAndFoundItems)
+    .where(eq(lostAndFoundItems.reportedBy, userId));
+
+  //Fetch Attachments for each lost item
+  const lostItemWithAttachments = await Promise.all(
+    myLostItems.map(async (item) => {
+      const attachments = await db
+        .select({
+          id: lostFoundAttachments.id,
+          fileURL: lostFoundAttachments.fileUrl,
+        })
+        .from(lostFoundAttachments)
+        .where(eq(lostFoundAttachments.itemId, item.id));
+
+      return {
+        ...item,
+        attachments,
+      };
+    }),
+  );
+
+  return lostItemWithAttachments;
 };
 
 export const getAllFoundItem = async () => {
@@ -171,6 +236,38 @@ export const getAllClaimedItems = async () => {
     .where(eq(lostAndFoundItems.status, "CLAIMED"));
 
   return claimedItems;
+};
+
+export const getAllLostAndFoundItems = async () => {
+  try {
+    const { alias } = await import("drizzle-orm/pg-core");
+    const reporter = alias(users, "reporter");
+    const claimer = alias(users, "claimer");
+
+    const items = await db
+      .select({
+        id: lostAndFoundItems.id,
+        title: lostAndFoundItems.title,
+        description: lostAndFoundItems.description,
+        type: lostAndFoundItems.type,
+        status: lostAndFoundItems.status,
+        lostDate: lostAndFoundItems.lostDate,
+        lostLocation: lostAndFoundItems.lostLocation,
+        foundDate: lostAndFoundItems.foundDate,
+        foundLocation: lostAndFoundItems.foundLocation,
+        createdAt: lostAndFoundItems.createdAt,
+        reportedByName: reporter.name,
+        claimedByName: claimer.name,
+      })
+      .from(lostAndFoundItems)
+      .leftJoin(reporter, eq(lostAndFoundItems.reportedBy, reporter.id))
+      .leftJoin(claimer, eq(lostAndFoundItems.claimedBy, claimer.id));
+
+    return items;
+  } catch (error) {
+    console.error("DB select failed:", error);
+    throw error;
+  }
 };
 
 // export const lostAndFoundItems = pgTable("lost_and_found_items", {

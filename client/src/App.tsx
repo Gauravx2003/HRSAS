@@ -16,6 +16,11 @@ import MyLostItems from "./pages/resident/MyLostItems";
 import AssignedComplaints from "./pages/staff/AssignedComplaints";
 import FoundItems from "./pages/resident/FoundItems";
 import MessIssues from "./pages/resident/MessIssues";
+import LateEntryExit from "./pages/resident/LateEntryExit";
+import LateEntryExitApproval from "./pages/admin/LateEntryExitApproval";
+import FinesAndPayments from "./pages/resident/FinesAndPayments";
+import FineManage from "./pages/admin/FineManage";
+import VisitorRequest from "./pages/resident/VisitorRequest";
 
 const App = () => {
   return (
@@ -38,6 +43,8 @@ const App = () => {
           <Route path="notices" element={<NoticeList />} />
           <Route path="escalations" element={<EscalatedComplaints />} />
           <Route path="lost-found" element={<LostFoundApprovals />} />
+          <Route path="late-entry-exit" element={<LateEntryExitApproval />} />
+          <Route path="fines-payments" element={<FineManage />} />
         </Route>
 
         {/* STAFF */}
@@ -73,6 +80,9 @@ const App = () => {
           <Route path="lost-items" element={<MyLostItems />} />
           <Route path="found-items" element={<FoundItems />} />
           <Route path="mess-issues" element={<MessIssues />} />
+          <Route path="late-entry-exit" element={<LateEntryExit />} />
+          <Route path="fines-payments" element={<FinesAndPayments />} />
+          <Route path="visitor-requests" element={<VisitorRequest />} />
         </Route>
       </Routes>
     </BrowserRouter>

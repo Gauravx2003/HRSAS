@@ -5,6 +5,7 @@ import {
   getHostelBlocksController,
   getBlockRoomsController,
   createStaffController,
+  getRoomResidentsController,
 } from "./userCreation.controller";
 
 const router = Router();
@@ -35,6 +36,13 @@ router.post(
   authenticate,
   authorize(["ADMIN"]),
   createStaffController,
+);
+
+router.get(
+  "/roomResidents/:roomId",
+  authenticate,
+  authorize(["ADMIN"]),
+  getRoomResidentsController,
 );
 
 export default router;

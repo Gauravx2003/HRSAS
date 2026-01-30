@@ -1,24 +1,56 @@
 import { Authenticate } from "../../middleware/auth";
 import { Response } from "express";
-import { lateEntryRequests, users } from "../../db/schema";
-import { eq, lt, gt, lte } from "drizzle-orm";
-import { db } from "../../db";
 import {
   createRequest,
   getMyRequests,
   getPendingRequests,
   updateRequest,
-  getSecurityDashboard,
+  getApprovedRequests,
 } from "./lateEntryExit.service";
+import { db } from "../../db";
+import { getTableColumns, eq } from "drizzle-orm";
+import {
+  lateEntryRequests,
+  residentProfiles,
+  rooms,
+  users,
+} from "../../db/schema";
 
 export const createRequestController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
-    const { reason, fromTime, toTime, type } = req.body;
+    const { reason, fromTime, toTime, type, time } = req.body;
 
-    if (new Date(fromTime) > new Date(toTime)) {
+    let finalFromTime: Date;
+    let finalToTime: Date;
+    const requestDate = time ? new Date(time) : new Date();
+
+    if (type === "OVERNIGHT") {
+      finalFromTime = new Date(fromTime);
+      finalToTime = new Date(toTime);
+    } else if (type == "EXIT") {
+      if (!time)
+        return res
+          .status(400)
+          .json({ message: "Expected departure time needed" });
+
+      finalFromTime = new Date(requestDate.getTime() - 30 * 60 * 1000);
+      finalToTime = new Date(requestDate.getTime() + 30 * 60 * 1000);
+    } else if (type == "ENTRY") {
+      if (!time)
+        return res
+          .status(400)
+          .json({ message: "Expected departure time needed" });
+
+      finalFromTime = requestDate;
+      finalToTime = new Date(requestDate.getTime() + 60 * 60 * 1000);
+    } else {
+      return res.status(400).json({ message: "Invalid request type" });
+    }
+
+    if (finalFromTime > finalToTime) {
       return res
         .status(400)
         .json({ message: "From time should be less than to time" });
@@ -28,8 +60,8 @@ export const createRequestController = async (
       req.user!.userId,
       type,
       reason,
-      new Date(fromTime),
-      new Date(toTime)
+      finalFromTime,
+      finalToTime,
     );
 
     res.status(201).json({
@@ -44,7 +76,7 @@ export const createRequestController = async (
 
 export const getMyRequestsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const requests = await getMyRequests(req.user!.userId);
@@ -57,7 +89,7 @@ export const getMyRequestsController = async (
 
 export const getPendingRequestsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const pendingRequests = await getPendingRequests();
@@ -70,7 +102,7 @@ export const getPendingRequestsController = async (
 
 export const updateRequestController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { id } = req.params;
@@ -84,12 +116,12 @@ export const updateRequestController = async (
   }
 };
 
-export const getSecurityDashboardController = async (
+export const getApprovedRequestsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
-    const result = await getSecurityDashboard();
+    const result = await getApprovedRequests();
     res.status(200).json(result);
   } catch (error) {
     console.log(error);
@@ -97,18 +129,24 @@ export const getSecurityDashboardController = async (
   }
 };
 
-// Add this enum if not exists, or just use text
-// export const gatePassTypeEnum = pgEnum("gate_pass_type", ["LATE_ENTRY", "EARLY_EXIT", "OVERNIGHT"]);
-
-// export const lateEntryRequests = pgTable("late_entry_requests", {
-//   id: uuid("id").defaultRandom().primaryKey(),
-//   residentId: uuid("resident_id")
-//     .references(() => users.id)
-//     .notNull(),
-//   type: gatePassTypeEnum("type").notNull(), // <--- RECOMMENDED ADDITION
-//   reason: text("reason").notNull(),
-//   fromTime: timestamp("from_time").notNull(), // When they leave / Validity start
-//   toTime: timestamp("to_time").notNull(),     // When they return / Validity end
-//   status: approvalStatusEnum("status").default("PENDING"),
-//   createdAt: timestamp("created_at").defaultNow(),
-// });
+export const getAllRequestsController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const result = await db
+      .select({
+        ...getTableColumns(lateEntryRequests),
+        residentName: users.name,
+        residentRoomNumber: rooms.roomNumber,
+      })
+      .from(lateEntryRequests)
+      .leftJoin(users, eq(lateEntryRequests.residentId, users.id))
+      .leftJoin(residentProfiles, eq(users.id, residentProfiles.userId))
+      .leftJoin(rooms, eq(residentProfiles.roomId, rooms.id));
+    res.status(200).json(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Failed to get late entry requests" });
+  }
+};

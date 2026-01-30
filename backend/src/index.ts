@@ -12,6 +12,7 @@ import complaintRoutes from "./modules/complaints/complaints.routes";
 import staffRoutes from "./modules/staff/staff.routes";
 import attachmentsRoutes from "./modules/complaints/attachments.routes";
 import lostAndFoundRoutes from "./modules/lostAndFound/lostAndFound.routes";
+import lostFoundAttachmentsRoutes from "./modules/lostAndFound/lostFoundAttachments.routes";
 import notificationsRoutes from "./modules/notifications/notifications.routes";
 import { runEscalationJob } from "./jobs/escalation.job";
 import noticesRoutes from "./modules/notices/notices.routes";
@@ -19,6 +20,8 @@ import lateEntryExitRoutes from "./modules/lateEntryExit/lateEntryExit.routes";
 import visitorsRoutes from "./modules/visitors/visitors.routes";
 import messIssueRoutes from "./modules/messIssue/messIssue.routes";
 import userCreationRoutes from "./modules/residentCreation/userCreation.routes";
+import paymentRoutes from "./modules/finesAndPayments/finesAndPayments.routes";
+import messAttachmentsRoutes from "./modules/messIssue/messAttachments.routes";
 import cron from "node-cron";
 
 const app = express();
@@ -40,12 +43,15 @@ app.use("/api/complaints", complaintRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/complaints", attachmentsRoutes);
 app.use("/api/lost-and-found", lostAndFoundRoutes);
+app.use("/api/lost-and-found", lostFoundAttachmentsRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/notices", noticesRoutes);
 app.use("/api/late-entry-exit", lateEntryExitRoutes);
 app.use("/api/visitors", visitorsRoutes);
 app.use("/api/mess-issues", messIssueRoutes);
+app.use("/api/mess-issues", messAttachmentsRoutes);
 app.use("/api/user-creation", userCreationRoutes);
+app.use("/api/payments", paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 

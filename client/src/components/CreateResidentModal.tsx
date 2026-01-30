@@ -19,10 +19,15 @@ interface Block {
 }
 
 interface Room {
-  id: string;
-  roomNumber: string;
-  capacity: number;
-  currentOccupancy: number;
+  rooms: {
+    id: string;
+    roomNumber: string;
+    capacity: number;
+    currentOccupancy: number;
+  };
+  room_types: {
+    capacity: number;
+  };
 }
 
 const CreateResidentModal = ({
@@ -83,6 +88,7 @@ const CreateResidentModal = ({
     setIsLoadingRooms(true);
     try {
       const data = await getBlockRooms(blockId);
+      console.log("data", data);
       setRooms(data);
     } catch (error) {
       console.error("Failed to fetch rooms:", error);
@@ -242,10 +248,11 @@ const CreateResidentModal = ({
                       : "Select a room"}
               </option>
               {rooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.roomNumber} (Available:{" "}
-                  {room.capacity - (room.currentOccupancy || 0)}/{room.capacity}
-                  )
+                <option key={room?.rooms.id} value={room.rooms.id}>
+                  {room.rooms.roomNumber} (Available:{" "}
+                  {room.room_types.capacity -
+                    (room.rooms.currentOccupancy || 0)}
+                  /{room.room_types.capacity})
                 </option>
               ))}
             </select>

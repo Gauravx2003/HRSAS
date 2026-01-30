@@ -1,12 +1,29 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, Bell, AlertTriangle, Package } from "lucide-react";
+import {
+  LayoutDashboard,
+  Bell,
+  AlertTriangle,
+  Package,
+  DoorOpen,
+  IndianRupee,
+} from "lucide-react";
 
 const AdminSidebar = () => {
   const navItems = [
     { path: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
-    { path: "/admin/notices", icon: Bell, label: "Notices" },
     { path: "/admin/escalations", icon: AlertTriangle, label: "Escalations" },
     { path: "/admin/lost-found", icon: Package, label: "Lost & Found" },
+    {
+      path: "/admin/late-entry-exit",
+      icon: DoorOpen,
+      label: "Entry/Exit Approvals",
+    },
+    {
+      path: "/admin/fines-payments",
+      icon: IndianRupee,
+      label: "Fines & Payments",
+    },
+    { path: "/admin/notices", icon: Bell, label: "Notices" },
   ];
 
   return (

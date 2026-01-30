@@ -13,6 +13,8 @@ export const loginController = async (req: Request, res: Response) => {
 
     const result = await loginUser(email, password);
 
+    //console.log(result);
+
     return res.json(result);
   } catch (err) {
     return res.status(401).json({ message: "Invalid Credentials" });

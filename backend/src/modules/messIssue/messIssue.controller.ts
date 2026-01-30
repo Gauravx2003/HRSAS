@@ -4,6 +4,7 @@ import {
   createMessComplaint,
   updateMessComplaint,
   getMessIssues,
+  getMyIssues,
 } from "./messIssue.service";
 
 import {
@@ -90,10 +91,7 @@ export const getMyMessIssuesController = async (
   res: Response,
 ) => {
   try {
-    const issues = await db
-      .select()
-      .from(messIssues)
-      .where(eq(messIssues.userId, req.user!.userId));
+    const issues = await getMyIssues(req.user!.userId);
     return res.status(200).json(issues);
   } catch (error) {
     console.error(error);

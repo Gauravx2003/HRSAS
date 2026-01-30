@@ -9,6 +9,9 @@ import {
   UtensilsCrossed,
   ChevronDown,
   ChevronRight,
+  DoorOpen,
+  IdCard,
+  IndianRupee,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
@@ -31,9 +34,42 @@ const navItems = [
       },
     ],
   },
-  { path: "/resident/lost-items", icon: Search, label: "My Lost Items" },
+  {
+    label: "Lost & Found",
+    icon: PackageCheck,
+    children: [
+      { path: "/resident/lost-items", icon: Search, label: "My Lost Items" },
+      {
+        path: "/resident/found-items",
+        icon: PackageCheck,
+        label: "Found Items",
+      },
+    ],
+  },
+
+  {
+    label: "Gate Pass",
+    icon: IdCard,
+    children: [
+      {
+        path: "/resident/late-entry-exit",
+        icon: DoorOpen,
+        label: "Late Entry/Exit",
+      },
+      {
+        path: "/resident/visitor-requests",
+        icon: IdCard,
+        label: "Visitor Requests",
+      },
+    ],
+  },
+  {
+    path: "/resident/fines-payments",
+    icon: IndianRupee,
+    label: "Fines & Payments",
+  },
+
   { path: "/resident/notices", icon: Bell, label: "Notices" },
-  { path: "/resident/found-items", icon: PackageCheck, label: "Found Items" },
 ];
 
 const SidebarItem = ({ item }: { item: any }) => {

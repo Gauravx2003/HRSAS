@@ -14,35 +14,35 @@ router.post(
   "/create",
   authenticate,
   authorize(["RESIDENT"]),
-  createRequestController
+  createRequestController,
 );
 
 router.get(
   "/my-requests",
   authenticate,
   authorize(["RESIDENT"]),
-  getMyVisitorRequestsController
+  getMyVisitorRequestsController,
 );
 
 router.get(
   "/pending",
   authenticate,
   authorize(["ADMIN"]),
-  getPendingRequestsController
+  getPendingRequestsController,
 );
 
 router.patch(
-  "/update/:id",
+  "/:id/update",
   authenticate,
   authorize(["ADMIN"]),
-  updateRequestController
+  updateRequestController,
 );
 
 router.get(
   "/today",
   authenticate,
   authorize(["ADMIN", "SECURITY"]),
-  getTodaysVisitorsController
+  getTodaysVisitorsController,
 );
 
 export default router;

@@ -14,6 +14,7 @@ interface Complaint {
   status: string;
   createdAt: string;
   staffName?: string;
+  attachments?: Array<{ id: string; fileURL: string }>;
 }
 
 const MyComplaints = () => {
@@ -71,7 +72,7 @@ const MyComplaints = () => {
           <p className="text-slate-600">No complaints yet</p>
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-4">
+        <div className="grid gap-4 lg:grid-cols-3">
           {complaints.map((complaint) => (
             <StatusCard
               key={complaint.id}
@@ -82,6 +83,7 @@ const MyComplaints = () => {
               createdAt={complaint.createdAt}
               uploadUrl={`/complaints/${complaint.id}/attachments`} // Specific URL
               onSuccess={fetchComplaints}
+              attachments={complaint.attachments}
             >
               {/* --- CHILD CONTENT: Specific to Complaints --- */}
               <div className="flex gap-2 text-xs">

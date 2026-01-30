@@ -13,6 +13,7 @@ import {
   residentProfiles,
   staffProfiles,
   complaintCategories,
+  room_types,
 } from "./schema";
 
 import { eq } from "drizzle-orm";
@@ -35,15 +36,14 @@ async function seed() {
   // Password hash
   const passwordHash = await bcrypt.hash("password123", 10);
 
-  const [security] = await db
-    .insert(users)
+  const [room_type] = await db
+    .insert(room_types)
     .values({
-      name: "Hostel Security",
-      email: "security@hostel.com",
-      passwordHash,
-      role: "SECURITY",
       organizationId: org.id,
-      hostelId: hostel.id,
+      name: "Standard-2-Bed",
+      description: "Standard room with 2 beds",
+      price: 1000,
+      capacity: 2,
     })
     .returning();
 

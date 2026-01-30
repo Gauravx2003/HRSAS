@@ -1,6 +1,12 @@
 import bcrypt from "bcrypt";
 import { db } from "../../db";
-import { users, residentProfiles, rooms, blocks } from "../../db/schema";
+import {
+  users,
+  residentProfiles,
+  rooms,
+  blocks,
+  organizations,
+} from "../../db/schema";
 import { eq, getTableColumns } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 
@@ -39,7 +45,7 @@ export const loginUser = async (email: string, password: string) => {
       hostelId: user.hostelId,
     },
     JWT_SECRET,
-    { expiresIn: "8h" }
+    { expiresIn: "8h" },
   );
 
   return {
@@ -54,6 +60,7 @@ export const loginUser = async (email: string, password: string) => {
       blockName: user.blockName,
       roomId: user.roomId,
       roomNumber: user.roomNumber,
+      organizationId: user.organizationId,
     },
   };
 };

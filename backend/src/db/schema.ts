@@ -8,6 +8,7 @@ import {
   boolean,
   integer,
   pgEnum,
+  numeric,
 } from "drizzle-orm/pg-core";
 
 import { MESS_ISSUE_CATEGORIES } from "../../../shared/constants";
@@ -96,13 +97,26 @@ export const blocks = pgTable("blocks", {
     .notNull(),
 });
 
+export const room_types = pgTable("room_types", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .references(() => organizations.id)
+    .notNull(),
+  name: varchar("name", { length: 50 }).notNull(),
+  description: text("description"),
+
+  price: integer("price").notNull(),
+  capacity: integer("capacity").default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const rooms = pgTable("rooms", {
   id: uuid("id").defaultRandom().primaryKey(),
   roomNumber: varchar("room_number", { length: 50 }).notNull(),
   blockId: uuid("block_id")
     .references(() => blocks.id)
     .notNull(),
-  capacity: integer("capacity").default(1),
+  type: uuid("type_id").references(() => room_types.id),
   currentOccupancy: integer("current_occupancy").default(0),
 });
 
@@ -330,4 +344,45 @@ export const messIssueAttachments = pgTable("mess_issue_attachments", {
   publicId: text("public_id").notNull(), //Cloudinary Public ID
 
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const paymentCategoryEnum = pgEnum("payment_category", [
+  "HOSTEL_FEE",
+  "FINE",
+  "MESS_FEE",
+  "SECURITY_DEPOSIT",
+]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "PENDING", // Fine issued, not paid
+  "COMPLETED", // Paid
+  "FAILED", // Transaction failed
+  "WAIVED", // Admin forgave the fine
+]);
+
+export const payments = pgTable("payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  residentId: uuid("resident_id")
+    .references(() => users.id)
+    .notNull(),
+
+  issuedBy: uuid("issued_by").references(() => users.id),
+
+  amount: integer("amount").notNull(),
+  category: paymentCategoryEnum("category").notNull(),
+
+  description: text("description"),
+  status: paymentStatusEnum("status").default("PENDING"),
+
+  //tracking
+  transactionId: varchar("transaction_id", { length: 255 }),
+  dueDate: timestamp("due_date"),
+  paidAt: timestamp("paid_at"),
+
+  // Razorpay fields
+  razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
+  razorpayOrderId: varchar("razorpay_order_id", { length: 255 }),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at"),
 });

@@ -33,7 +33,7 @@ const AttachmentsUpload = ({
     if (!file) return;
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("images", file);
     setLoading(true);
 
     try {

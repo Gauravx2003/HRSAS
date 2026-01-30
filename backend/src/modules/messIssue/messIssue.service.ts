@@ -24,7 +24,7 @@ export const createMessComplaint = async (
   issueTitle: string,
   issueDescription: string,
   userId: string,
-  category: "FOOD" | "SERVICE" | "HYGIENE" | "INFRASTRUCTURE" | "OTHER"
+  category: "FOOD" | "SERVICE" | "HYGIENE" | "INFRASTRUCTURE" | "OTHER",
 ) => {
   const [newIssue] = await db
     .insert(messIssues)
@@ -42,7 +42,7 @@ export const createMessComplaint = async (
 export const updateMessComplaint = async (
   id: string,
   status: "IN_REVIEW" | "RESOLVED" | "REJECTED",
-  adminResponse?: string
+  adminResponse?: string,
 ) => {
   const [currentIssue] = await db
     .select()
@@ -56,7 +56,7 @@ export const updateMessComplaint = async (
   // Status Transition Logic
   if (currentIssue.status === "OPEN" && status === "RESOLVED") {
     throw new Error(
-      "Invalid transition: Cannot directly resolve an OPEN issue. Move to IN_REVIEW first."
+      "Invalid transition: Cannot directly resolve an OPEN issue. Move to IN_REVIEW first.",
     );
   }
 
@@ -92,11 +92,40 @@ export const getMessIssues = async (status?: string) => {
       .where(
         eq(
           messIssues.status,
-          status as "OPEN" | "IN_REVIEW" | "RESOLVED" | "REJECTED"
-        )
+          status as "OPEN" | "IN_REVIEW" | "RESOLVED" | "REJECTED",
+        ),
       )
       .orderBy(desc(messIssues.createdAt));
     return issues;
   }
   return await db.select().from(messIssues);
+};
+
+export const getMyIssues = async (id: string) => {
+  const { messIssueAttachments } = await import("../../db/schema");
+
+  const myIssues = await db
+    .select()
+    .from(messIssues)
+    .where(eq(messIssues.userId, id));
+
+  // Fetch attachments for each complaint
+  const issuesWithAttachments = await Promise.all(
+    myIssues.map(async (issue) => {
+      const attachments = await db
+        .select({
+          id: messIssueAttachments.id,
+          fileURL: messIssueAttachments.fileURL,
+        })
+        .from(messIssueAttachments)
+        .where(eq(messIssueAttachments.issueId, issue.id));
+
+      return {
+        ...issue,
+        attachments,
+      };
+    }),
+  );
+
+  return issuesWithAttachments;
 };

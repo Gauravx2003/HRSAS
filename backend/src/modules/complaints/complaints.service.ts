@@ -22,7 +22,7 @@ export const createComplaint = async (
   roomId: string,
   categoryId: string,
   description: string,
-  title?: string
+  title?: string,
 ) => {
   //Fetch category ( for SLA )
 
@@ -56,7 +56,7 @@ export const createComplaint = async (
     HAVING COUNT(c.id) < sp.max_active_tasks
     ORDER BY COUNT(c.id) ASC
     LIMIT 1
-  `
+  `,
   );
 
   const assignedStaff =
@@ -91,8 +91,19 @@ export const createComplaint = async (
   });
 };
 
-export const getMyComplaints = async (id: string) => {
-  const myComplaints = await db
+export const getMyComplaints = async (
+  id: string,
+  status?:
+    | "CREATED"
+    | "ASSIGNED"
+    | "IN_PROGRESS"
+    | "CLOSED"
+    | "RESOLVED"
+    | "ESCALATED",
+) => {
+  const { complaintAttachments } = await import("../../db/schema");
+
+  let query = db
     .select({
       ...getTableColumns(complaints),
       categoryName: complaintCategories.name,
@@ -101,12 +112,37 @@ export const getMyComplaints = async (id: string) => {
     .from(complaints)
     .leftJoin(
       complaintCategories,
-      eq(complaints.categoryId, complaintCategories.id)
+      eq(complaints.categoryId, complaintCategories.id),
     )
-    .leftJoin(users, eq(complaints.assignedStaff, users.id))
-    .where(eq(complaints.residentId, id));
+    .leftJoin(users, eq(complaints.assignedStaff, users.id));
 
-  return myComplaints;
+  const filters = [eq(complaints.residentId, id)];
+
+  if (status) {
+    filters.push(eq(complaints.status, status));
+  }
+
+  const myComplaints = await query.where(and(...filters));
+
+  // Fetch attachments for each complaint
+  const complaintsWithAttachments = await Promise.all(
+    myComplaints.map(async (complaint) => {
+      const attachments = await db
+        .select({
+          id: complaintAttachments.id,
+          fileURL: complaintAttachments.fileURL,
+        })
+        .from(complaintAttachments)
+        .where(eq(complaintAttachments.complaintId, complaint.id));
+
+      return {
+        ...complaint,
+        attachments,
+      };
+    }),
+  );
+
+  return complaintsWithAttachments;
 };
 
 export const getEscalatedComplaints = async () => {
@@ -124,7 +160,7 @@ export const getEscalatedComplaints = async () => {
     .from(complaints)
     .leftJoin(
       complaintCategories,
-      eq(complaints.categoryId, complaintCategories.id)
+      eq(complaints.categoryId, complaintCategories.id),
     )
     .leftJoin(resident, eq(complaints.residentId, resident.id))
     .leftJoin(rooms, eq(complaints.roomId, rooms.id))
@@ -141,7 +177,7 @@ export const getAllComplaintCategories = async () => {
 export const reassignComplaint = async (
   complaintId: string,
   newStaffId: string,
-  adminId: string
+  adminId: string,
 ) => {
   //Get Existing Complaint
   return await db.transaction(async (tx) => {
@@ -153,7 +189,7 @@ export const reassignComplaint = async (
       .from(complaints)
       .innerJoin(
         complaintCategories,
-        eq(complaints.categoryId, complaintCategories.id)
+        eq(complaints.categoryId, complaintCategories.id),
       )
       .where(eq(complaints.id, complaintId));
 
@@ -177,7 +213,7 @@ export const reassignComplaint = async (
 
     const newSLADeadline = new Date();
     newSLADeadline.setHours(
-      newSLADeadline.getHours() + existingComplaint.slaHours
+      newSLADeadline.getHours() + existingComplaint.slaHours,
     );
 
     //Update the SLA deadline for the complaint

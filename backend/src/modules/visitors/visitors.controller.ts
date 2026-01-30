@@ -10,7 +10,7 @@ import {
 
 export const createRequestController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { visitorName, visitorPhone, visitDate } = req.body;
@@ -18,7 +18,7 @@ export const createRequestController = async (
       visitorName,
       visitorPhone,
       new Date(visitDate),
-      req.user!.userId
+      req.user!.userId,
     );
     return res.status(201).json(newRequest);
   } catch (error) {
@@ -29,10 +29,15 @@ export const createRequestController = async (
 
 export const getMyVisitorRequestsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
-    const requests = await getMyVisitorRequests(req.user!.userId);
+    const { status } = req.query;
+
+    const requests = await getMyVisitorRequests(
+      req.user!.userId,
+      status as "PENDING" | "APPROVED" | "REJECTED",
+    );
     return res.status(200).json(requests);
   } catch (error) {
     console.error("DB select failed:", error);
@@ -40,11 +45,10 @@ export const getMyVisitorRequestsController = async (
   }
 };
 
-
 //ADMIN
 export const getPendingRequestsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const pendingrequests = await getPendingRequests();
@@ -57,11 +61,11 @@ export const getPendingRequestsController = async (
 
 export const updateRequestController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status } = req.query;
 
     if (status != "APPROVED" && status != "REJECTED") {
       return res.status(400).json({ error: "Invalid status" });
@@ -79,7 +83,7 @@ export const updateRequestController = async (
 
 export const getTodaysVisitorsController = async (
   req: Authenticate,
-  res: Response
+  res: Response,
 ) => {
   try {
     const todaysVisitors = await getTodaysVisitors();

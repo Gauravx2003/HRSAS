@@ -4,7 +4,8 @@ import {
   getMyRequestsController,
   getPendingRequestsController,
   updateRequestController,
-  getSecurityDashboardController,
+  getApprovedRequestsController,
+  getAllRequestsController,
 } from "./lateEntryExit.controller";
 import { authenticate, authorize } from "../../middleware/auth";
 
@@ -14,35 +15,42 @@ lateEntryExitRouter.post(
   "/create",
   authenticate,
   authorize(["RESIDENT"]),
-  createRequestController
+  createRequestController,
 );
 
 lateEntryExitRouter.get(
   "/my",
   authenticate,
   authorize(["RESIDENT"]),
-  getMyRequestsController
-);
-
-lateEntryExitRouter.get(
-  "/pending",
-  authenticate,
-  authorize(["ADMIN"]),
-  getPendingRequestsController
+  getMyRequestsController,
 );
 
 lateEntryExitRouter.patch(
   "/:id",
   authenticate,
   authorize(["ADMIN"]),
-  updateRequestController
+  updateRequestController,
 );
 
 lateEntryExitRouter.get(
-  "/security-dashboard",
+  "/pending",
+  authenticate,
+  authorize(["ADMIN"]),
+  getPendingRequestsController,
+);
+
+lateEntryExitRouter.get(
+  "/approved",
   authenticate,
   authorize(["ADMIN", "SECURITY"]),
-  getSecurityDashboardController
+  getApprovedRequestsController,
+);
+
+lateEntryExitRouter.get(
+  "/all",
+  authenticate,
+  authorize(["ADMIN", "SECURITY"]),
+  getAllRequestsController,
 );
 
 export default lateEntryExitRouter;

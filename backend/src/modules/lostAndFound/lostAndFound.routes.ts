@@ -1,64 +1,83 @@
 import { Router } from "express";
 import { authenticate, authorize } from "../../middleware/auth";
 import {
-  lostAndFoundController,
-  updateLostAndFoundItemController,
+  createLostAndFoundItemController,
+  updateLostItemController,
   claimLostAndFoundItemController,
   getMyLostItemController,
   getAllFoundItemController,
   getAllClaimedItemsController,
   closeLostAndFoundItemController,
+  getAllItemsController,
+  openClaimedController,
 } from "./lostAndFound.controller";
+import { addLostFoundAttachments } from "./lostFoundAttachments.controller";
 
 const router = Router();
 
 router.post(
-  "/",
+  "/create",
   authenticate,
-  authorize(["RESIDENT", "STAFF", "ADMIN"]),
-  lostAndFoundController
+  authorize(["RESIDENT", "ADMIN"]),
+  createLostAndFoundItemController,
 );
 
 router.patch(
-  "/:id",
+  "/:id/update",
   authenticate,
   authorize(["ADMIN"]),
-  updateLostAndFoundItemController
+  updateLostItemController,
 );
 
 router.patch(
   "/:id/claim",
   authenticate,
   authorize(["RESIDENT", "STAFF", "ADMIN"]),
-  claimLostAndFoundItemController
+  claimLostAndFoundItemController,
 );
 
 router.get(
   "/my",
   authenticate,
   authorize(["RESIDENT", "STAFF", "ADMIN"]),
-  getMyLostItemController
+  getMyLostItemController,
 );
+
+router.get("/all", authenticate, authorize(["ADMIN"]), getAllItemsController);
 
 router.get(
   "/found",
   authenticate,
   authorize(["RESIDENT", "STAFF", "ADMIN"]),
-  getAllFoundItemController
+  getAllFoundItemController,
 );
 
 router.get(
   "/claimed",
   authenticate,
   authorize(["ADMIN"]),
-  getAllClaimedItemsController
+  getAllClaimedItemsController,
 );
 
 router.patch(
   "/:id/close",
   authenticate,
   authorize(["ADMIN"]),
-  closeLostAndFoundItemController
+  closeLostAndFoundItemController,
 );
+
+router.patch(
+  "/:id/open",
+  authenticate,
+  authorize(["ADMIN"]),
+  openClaimedController,
+);
+
+// router.post(
+//   "/admin/found",
+//   authenticate,
+//   authorize(["ADMIN"]),
+//   createFoundItemByAdminController,
+// );
 
 export default router;

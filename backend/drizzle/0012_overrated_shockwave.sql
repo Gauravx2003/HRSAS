@@ -1,0 +1,1 @@
+ALTER TABLE "room_types" ALTER COLUMN "price" SET DATA TYPE integer;

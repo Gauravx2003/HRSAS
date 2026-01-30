@@ -47,3 +47,8 @@ export const getBlockRooms = async (blockId: string) => {
   const response = await api.get(`/user-creation/blockRooms/${blockId}`);
   return response.data;
 };
+
+export const getRoomResidents = async (roomId: string) => {
+  const response = await api.get(`/user-creation/roomResidents/${roomId}`);
+  return response.data;
+};

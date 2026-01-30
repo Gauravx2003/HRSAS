@@ -2,6 +2,7 @@
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import ExpandableText from "./ExpandableText"; // Import the one we just made
 import AttachmentsUpload from "../AttachmentsUpload";
+import AttachmentPreview from "../AttachmentPreview";
 
 interface StatusCardProps {
   id: string;
@@ -11,6 +12,7 @@ interface StatusCardProps {
   createdAt: string;
   uploadUrl: string; // Dynamic URL for the upload component
   onSuccess: () => void;
+  attachments?: Array<{ id: string; fileURL: string }>;
   // This allows us to insert different tags (Category vs Staff) for different pages
   children?: React.ReactNode;
 }
@@ -23,6 +25,7 @@ const StatusCard = ({
   createdAt,
   uploadUrl,
   onSuccess,
+  attachments,
   children,
 }: StatusCardProps) => {
   // Helper Logic moved inside (or you can keep passing it in as props if logic differs drastically)
@@ -77,7 +80,12 @@ const StatusCard = ({
       {/* 4. Description */}
       <ExpandableText text={description} />
 
-      {/* 5. Footer: Upload */}
+      {/* 5. Attachment Preview */}
+      {attachments && attachments.length > 0 && (
+        <AttachmentPreview attachments={attachments} />
+      )}
+
+      {/* 6. Footer: Upload */}
       <AttachmentsUpload uploadUrl={uploadUrl} onSuccess={onSuccess} />
     </div>
   );

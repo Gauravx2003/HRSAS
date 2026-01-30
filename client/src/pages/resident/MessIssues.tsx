@@ -12,12 +12,15 @@ interface Issue {
   issueTitle: string;
   createdAt: string;
   resolvedAt: string;
+  attachments?: Array<{ id: string; fileURL: string }>;
 }
 
 const MessIssues = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  console.log("issues: ", issues);
 
   useEffect(() => {
     fetchIssues();
@@ -96,6 +99,7 @@ const MessIssues = () => {
               createdAt={issue.createdAt}
               uploadUrl={`/mess-issues/${issue.id}/attachments`}
               onSuccess={fetchIssues}
+              attachments={issue.attachments}
             >
               {/* --- CHILD CONTENT: Specific to Mess Issues --- */}
               <span
