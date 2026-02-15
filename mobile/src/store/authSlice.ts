@@ -6,7 +6,12 @@ interface User {
   name: string;
   email: string;
   role: string;
+  hostelId: string;
+  blockId?: string;
+  blockName?: string;
+  roomId?: string;
   roomNumber?: string;
+  organizationId: string;
 }
 
 interface AuthState {

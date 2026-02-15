@@ -7,10 +7,21 @@ import {
 } from "../../db/schema";
 import { createNotification } from "../notifications/notifications.service";
 
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
-export const getAssignedComplaints = async (staffId: string) => {
-  return db
+export const getAssignedComplaints = async (
+  staffId: string,
+  status?: "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED",
+) => {
+  // Create a base condition array
+  const conditions = [eq(complaints.assignedStaff, staffId)];
+
+  // If a status is provided, add it to the conditions
+  if (status) {
+    conditions.push(eq(complaints.status, status));
+  }
+
+  return await db
     .select({
       id: complaints.id,
       description: complaints.description,
@@ -25,7 +36,7 @@ export const getAssignedComplaints = async (staffId: string) => {
       complaintCategories,
       eq(complaintCategories.id, complaints.categoryId),
     )
-    .where(eq(complaints.assignedStaff, staffId));
+    .where(and(...conditions)); // Spreads all active conditions into the AND block
 };
 
 export const updateComplaintStatus = async (

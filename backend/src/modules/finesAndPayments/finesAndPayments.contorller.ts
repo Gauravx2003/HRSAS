@@ -6,6 +6,7 @@ import { eq, and, getTableColumns } from "drizzle-orm";
 import { db } from "../../db";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { activateMembership } from "../memberships/memberships.service";
 
 export const createPaymentController = async (
   req: Authenticate,
@@ -204,14 +205,34 @@ export const verifyPaymentController = async (
         .json({ message: "All payment details are required" });
     }
 
-    // Verify signature
-    const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "")
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest("hex");
+    // Bypass verification in development if signature is "dev_bypass"
+    if (
+      process.env.NODE_ENV === "development" ||
+      process.env.NODE_ENV === "local"
+    ) {
+      if (razorpaySignature === "dev_bypass") {
+        // Skip signature check
+      } else {
+        // Verify signature
+        const generatedSignature = crypto
+          .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "")
+          .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+          .digest("hex");
 
-    if (generatedSignature !== razorpaySignature) {
-      return res.status(400).json({ message: "Invalid payment signature" });
+        if (generatedSignature !== razorpaySignature) {
+          return res.status(400).json({ message: "Invalid payment signature" });
+        }
+      }
+    } else {
+      // Verify signature (Production)
+      const generatedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "")
+        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .digest("hex");
+
+      if (generatedSignature !== razorpaySignature) {
+        return res.status(400).json({ message: "Invalid payment signature" });
+      }
     }
 
     // Update payment status
@@ -224,6 +245,9 @@ export const verifyPaymentController = async (
         updatedAt: new Date(),
       })
       .where(eq(payments.id, paymentId));
+
+    // Activate membership if applicable
+    await activateMembership(paymentId);
 
     res.status(200).json({ message: "Payment verified successfully" });
   } catch (err) {

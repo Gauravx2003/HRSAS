@@ -6,9 +6,16 @@ import { createNotification } from "../notifications/notifications.service";
 export const createPayment = async (
   residentId: string,
   amount: number,
-  category: "HOSTEL_FEE" | "FINE" | "MESS_FEE" | "SECURITY_DEPOSIT",
+  category:
+    | "HOSTEL_FEE"
+    | "FINE"
+    | "MESS_FEE"
+    | "SECURITY_DEPOSIT"
+    | "LIBRARY_MEMBERSHIP"
+    | "GYM_MEMBERSHIP"
+    | "LIBRARY_FINE",
   description: string,
-  issuedBy: string,
+  issuedBy?: string, // Made optional
 ) => {
   const [resident] = await db
     .select()

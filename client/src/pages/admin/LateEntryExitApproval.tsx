@@ -18,8 +18,8 @@ interface LateEntryRequest {
   id: string;
   type: "ENTRY" | "EXIT" | "OVERNIGHT";
   reason: string;
-  fromTime: string;
-  toTime: string;
+  outTime: string;
+  inTime: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   createdAt: string;
   residentName: string;
@@ -29,9 +29,15 @@ interface LateEntryRequest {
 const LateEntryExitApproval = () => {
   const [requests, setRequests] = useState<LateEntryRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "APPROVED">(
-    "PENDING",
-  );
+  const [filter, setFilter] = useState<
+    | "ALL"
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "ACTIVE"
+    | "CLOSED"
+    | "EXPIRED"
+  >("PENDING");
 
   useEffect(() => {
     fetchRequests();
@@ -40,27 +46,17 @@ const LateEntryExitApproval = () => {
   const fetchRequests = async () => {
     setIsLoading(true);
     try {
-      let endpoint = "/late-entry-exit/pending";
+      let endpoint = "/gate-pass/all";
 
-      if (filter === "ALL") {
-        endpoint = "/late-entry-exit/all";
-      } else if (filter === "PENDING") {
-        endpoint = "/late-entry-exit/pending";
-      } else if (filter === "APPROVED") {
-        endpoint = "/late-entry-exit/approved";
+      if (filter !== "ALL") {
+        endpoint += `?status=${filter}`;
       }
 
       const response = await api.get(endpoint);
+      console.log(response.data);
 
       // Filter on frontend if needed
-      let filteredData = response.data;
-      if (filter === "APPROVED") {
-        filteredData = response.data.filter(
-          (req: LateEntryRequest) => req.status === "APPROVED",
-        );
-      }
-
-      setRequests(filteredData);
+      setRequests(response.data);
     } catch (error) {
       console.error("Failed to fetch requests:", error);
     } finally {
@@ -70,7 +66,7 @@ const LateEntryExitApproval = () => {
 
   const handleApprove = async (id: string) => {
     try {
-      await api.patch(`/late-entry-exit/${id}`, { status: "APPROVED" });
+      await api.patch(`/gate-pass/${id}`, { status: "APPROVED" });
       fetchRequests();
     } catch (error) {
       console.error("Failed to approve request:", error);
@@ -79,7 +75,7 @@ const LateEntryExitApproval = () => {
 
   const handleReject = async (id: string) => {
     try {
-      await api.patch(`/late-entry-exit/${id}`, { status: "REJECTED" });
+      await api.patch(`/gate-pass/${id}`, { status: "REJECTED" });
       fetchRequests();
     } catch (error) {
       console.error("Failed to reject request:", error);
@@ -220,8 +216,8 @@ const LateEntryExitApproval = () => {
           {requests.map((request) => {
             const passType = getPassTypeInfo(request.type);
             const status = getStatusBadge(request.status);
-            const fromDateTime = formatDateTime(request.fromTime);
-            const toDateTime = formatDateTime(request.toTime);
+            const fromDateTime = formatDateTime(request.outTime);
+            const toDateTime = formatDateTime(request.inTime);
 
             return (
               <div

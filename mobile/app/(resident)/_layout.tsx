@@ -1,10 +1,10 @@
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context"; // <--- 1. Import this
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Platform } from "react-native";
 
 export default function ResidentLayout() {
-  const insets = useSafeAreaInsets(); // <--- 2. Get the safe area values
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -13,62 +13,92 @@ export default function ResidentLayout() {
         tabBarActiveTintColor: "#2563EB",
         tabBarInactiveTintColor: "#9CA3AF",
         tabBarStyle: {
-          height: 60 + insets.bottom, // <--- 3. Add dynamic height (60 + button bar height)
+          height: 60 + insets.bottom,
           paddingTop: 10,
-          // 4. If on Android, use the inset (button bar height). If on iOS, use standard 20.
           paddingBottom: Platform.OS === "android" ? insets.bottom + 10 : 20,
           backgroundColor: "white",
           borderTopWidth: 1,
           borderTopColor: "#F3F4F6",
+          elevation: 0, // Removes Android shadow for a cleaner look
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: "500",
-          paddingBottom: 5, // Gives space between icon and text
+          fontWeight: "600",
+          marginTop: -2,
         },
       }}
     >
+      {/* 1. HOME (Visible) */}
       <Tabs.Screen
         name="dashboard"
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => (
-            <Feather name="home" size={24} color={color} />
+            <Feather name="grid" size={24} color={color} />
           ),
         }}
       />
-      <Tabs.Screen
-        name="complaints"
-        options={{
-          title: "Complaints",
-          tabBarIcon: ({ color }) => (
-            <Feather name="alert-triangle" size={24} color={color} />
-          ),
-        }}
-      />
+
+      {/* 2. MESS (Visible) */}
       <Tabs.Screen
         name="mess"
         options={{
-          title: "Mess",
+          title: "Food",
           tabBarIcon: ({ color }) => (
             <Feather name="coffee" size={24} color={color} />
           ),
         }}
       />
+
+      {/* 3. COMPLAINTS (Visible) */}
       <Tabs.Screen
-        name="library"
+        name="complaints"
         options={{
-          title: "Library",
+          title: "Help",
           tabBarIcon: ({ color }) => (
-            <Feather name="book" size={24} color={color} />
+            <Feather name="life-buoy" size={24} color={color} />
           ),
         }}
       />
-      {/* Hide specific routes you don't want in the tab bar (like profile if needed) */}
+
+      {/* 4. PROFILE (Visible) */}
       <Tabs.Screen
         name="profile"
         options={{
-          href: null, // This hides it from the bottom bar
+          title: "Profile",
+          tabBarIcon: ({ color }) => (
+            <Feather name="user" size={24} color={color} />
+          ),
+        }}
+      />
+
+      {/* --- HIDDEN ROUTES (Accessible via Dashboard only) --- */}
+
+      <Tabs.Screen
+        name="library"
+        options={{
+          href: null, // <--- Hides this tab
+        }}
+      />
+
+      <Tabs.Screen
+        name="lostAndFound"
+        options={{
+          href: null, // <--- Hides this tab
+        }}
+      />
+
+      <Tabs.Screen
+        name="visitors"
+        options={{
+          href: null, // <--- Hides this tab
+        }}
+      />
+
+      <Tabs.Screen
+        name="gate-pass"
+        options={{
+          href: null, // <--- Hides this tab
         }}
       />
     </Tabs>

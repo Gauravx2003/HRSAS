@@ -1,1 +1,0 @@
-ALTER TABLE "mess_issues" ADD COLUMN "category" "mess_issue_category" NOT NULL;

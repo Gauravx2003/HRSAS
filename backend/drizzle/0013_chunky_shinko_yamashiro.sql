@@ -1,1 +1,0 @@
-ALTER TABLE "payments" ALTER COLUMN "issued_by" DROP NOT NULL;

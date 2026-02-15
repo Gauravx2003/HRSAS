@@ -16,7 +16,7 @@ const TopBar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
 
-  console.log(user);
+  //console.log(user);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");

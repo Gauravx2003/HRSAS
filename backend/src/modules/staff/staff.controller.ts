@@ -1,6 +1,9 @@
 import { Authenticate } from "../../middleware/auth";
 import { getAssignedComplaints } from "./staff.service";
 import { Request, Response } from "express";
+import { db } from "../../db";
+import { complaints } from "../../db/schema";
+import { eq } from "drizzle-orm";
 import {
   updateComplaintStatus,
   getStaffBySpecialization,
@@ -10,8 +13,13 @@ export const getAssignedComplaintsController = async (
   req: Authenticate,
   res: Response,
 ) => {
+  const { status } = req.query;
+
   try {
-    const conplaints = await getAssignedComplaints(req.user!.userId);
+    const conplaints = await getAssignedComplaints(
+      req.user!.userId,
+      status as "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED",
+    );
     return res.status(200).json(conplaints);
   } catch (error) {
     console.error(error);

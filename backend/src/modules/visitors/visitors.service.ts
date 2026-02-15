@@ -14,6 +14,8 @@ const generateEntryCode = () =>
 export const createRequest = async (
   visitorName: string,
   visitorPhone: string,
+  purpose: string,
+  relation: string,
   visitDate: Date,
   residentId: string,
 ) => {
@@ -27,6 +29,8 @@ export const createRequest = async (
       visitorPhone,
       entryCode,
       visitDate,
+      relation,
+      purpose,
       status: "PENDING",
     })
     .returning();

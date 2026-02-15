@@ -13,10 +13,13 @@ export const createRequestController = async (
   res: Response,
 ) => {
   try {
-    const { visitorName, visitorPhone, visitDate } = req.body;
+    const { visitorName, visitorPhone, purpose, relation, visitDate } =
+      req.body;
     const newRequest = await createRequest(
       visitorName,
       visitorPhone,
+      purpose,
+      relation,
       new Date(visitDate),
       req.user!.userId,
     );
@@ -93,19 +96,3 @@ export const getTodaysVisitorsController = async (
     return res.status(500).json({ error: "Failed to get requests" });
   }
 };
-
-// export const visitorRequests = pgTable("visitor_requests", {
-//   id: uuid("id").defaultRandom().primaryKey(),
-//   residentId: uuid("resident_id")
-//     .references(() => users.id)
-//     .notNull(),
-
-//   // New Fields for Authenticity
-//   visitorName: varchar("visitor_name", { length: 100 }).notNull(),
-//   visitorPhone: varchar("visitor_phone", { length: 15 }).notNull(),
-//   entryCode: varchar("entry_code", { length: 6 }).notNull(), // 6-digit Security Code
-
-//   visitDate: timestamp("visit_date").notNull(),
-//   status: approvalStatusEnum("status").default("PENDING"),
-//   createdAt: timestamp("created_at").defaultNow(),
-// });

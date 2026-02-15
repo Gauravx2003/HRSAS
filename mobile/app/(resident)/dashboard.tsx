@@ -44,6 +44,13 @@ export default function ResidentDashboard() {
       color: "bg-teal-100",
       iconColor: "#0D9488",
     },
+    {
+      label: "Lost & Found",
+      icon: "search",
+      route: "/(resident)/lostAndFound",
+      color: "bg-red-100",
+      iconColor: "#DC2626",
+    },
   ];
 
   return (

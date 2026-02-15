@@ -25,6 +25,8 @@ interface Payment {
   residentRoom: string;
 }
 
+
+
 const FineManage = () => {
   const [filter, setFilter] = useState<
     "ALL" | "PENDING" | "COMPLETED" | "WAIVED"

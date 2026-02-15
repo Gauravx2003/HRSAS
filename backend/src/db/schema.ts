@@ -72,7 +72,199 @@ export const messIssueStatusEnum = pgEnum("mess_issue_status", [
   "REJECTED",
 ]);
 
+// ... existing imports
+
+// 1. Library Enums
+export const bookStatusEnum = pgEnum("book_status", [
+  "AVAILABLE",
+  "BORROWED",
+  "LOST",
+  "MAINTENANCE",
+]);
+
+// 2. Smart Mess Enums
+export const mealTypeEnum = pgEnum("meal_type", [
+  "BREAKFAST",
+  "LUNCH",
+  "SNACKS",
+  "DINNER",
+]);
+
+export const messAttendanceStatusEnum = pgEnum("mess_attendance_status", [
+  "OPTED_IN", // User said they will eat
+  "SCANNED", // QR was scanned at counter
+  "MISSED", // Opted in but didn't eat
+]);
+
+// 3. SOS Enum
+export const sosStatusEnum = pgEnum("sos_status", [
+  "ACTIVE",
+  "RESOLVED",
+  "FALSE_ALARM",
+]);
+
+// 4. Gate Pass Status (Specific for Outing)
+export const gatePassStatusEnum = pgEnum("gate_pass_status", [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "ACTIVE", // Student is currently out
+  "CLOSED", // Student has returned
+  "EXPIRED",
+]);
+
+//5. Membership
+export const planDurationEnum = pgEnum("plan_duration", [
+  "MONTHLY",
+  "QUARTERLY",
+  "HALF_YEARLY",
+  "YEARLY",
+]);
+
+// NEW: Membership Status
+export const membershipStatusEnum = pgEnum("membership_status", [
+  "ACTIVE",
+  "EXPIRED",
+  "CANCELLED",
+  "PENDING_PAYMENT",
+]);
+
+export const bookFormatEnum = pgEnum("book_format", [
+  "PHYSICAL",
+  "EBOOK",
+  "AUDIOBOOK",
+]);
+
 //Tables
+
+export const libraryBooks = pgTable("library_books", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .references(() => organizations.id)
+    .notNull(),
+  hostelId: uuid("hostel_id").references(() => hostels.id), // Books can belong to specific hostels
+
+  title: varchar("title", { length: 255 }).notNull(),
+  author: varchar("author", { length: 255 }).notNull(),
+  isbn: varchar("isbn", { length: 50 }),
+  coverUrl: text("cover_url"),
+
+  // Digital Book Fields
+  isDigital: boolean("is_digital").default(false),
+  downloadUrl: text("download_url"), // Secure URL for PDF/EPUB
+  format: bookFormatEnum("format").default("PHYSICAL"),
+
+  status: bookStatusEnum("status").default("AVAILABLE"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const libraryTransactions = pgTable("library_transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  bookId: uuid("book_id")
+    .references(() => libraryBooks.id)
+    .notNull(),
+
+  issueDate: timestamp("issue_date").defaultNow().notNull(),
+  dueDate: timestamp("due_date").notNull(),
+  returnDate: timestamp("return_date"),
+
+  status: bookStatusEnum("status").default("BORROWED"),
+
+  // Fine Logic
+  fineAmount: integer("fine_amount").default(0),
+  isFinePaid: boolean("is_fine_paid").default(false),
+  finePaymentId: uuid("fine_payment_id").references(() => payments.id), // Link to payment when paid
+});
+
+// NEW: Defines the rules/packages for a specific Hostel's library
+export const libraryPlans = pgTable("library_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  hostelId: uuid("hostel_id")
+    .references(() => hostels.id)
+    .notNull(),
+
+  name: varchar("name", { length: 100 }).notNull(), // e.g., "Basic Access", "Scholar Pack"
+  duration: planDurationEnum("duration").notNull(), // Quarterly, Yearly
+  price: integer("price").notNull(),
+
+  maxBooksAllowed: integer("max_books_allowed").default(2),
+  finePerDay: integer("fine_per_day").default(10), // Store fine rules per plan
+
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// NEW: Tracks which user has which plan
+export const libraryMemberships = pgTable("library_memberships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  planId: uuid("plan_id")
+    .references(() => libraryPlans.id)
+    .notNull(),
+
+  startDate: timestamp("start_date").defaultNow().notNull(),
+  endDate: timestamp("end_date").notNull(),
+
+  status: membershipStatusEnum("status").default("ACTIVE"),
+
+  // Link to your payments table for the membership fee
+  paymentId: uuid("payment_id").references(() => payments.id),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const messMenu = pgTable("mess_menu", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  hostelId: uuid("hostel_id")
+    .references(() => hostels.id)
+    .notNull(),
+
+  date: timestamp("date").notNull(),
+  mealType: mealTypeEnum("meal_type").notNull(),
+
+  items: text("items").notNull(), // "Paneer, Roti, Rice"
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const messAttendance = pgTable("mess_attendance", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+
+  date: timestamp("date").notNull(),
+  mealType: mealTypeEnum("meal_type").notNull(),
+
+  qrToken: text("qr_token").unique().notNull(), // Secure token for QR generation
+  status: messAttendanceStatusEnum("status").default("OPTED_IN"),
+
+  scannedAt: timestamp("scanned_at"), // When the mess worker scanned it
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const sosAlerts = pgTable("sos_alerts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+
+  latitude: numeric("latitude"),
+  longitude: numeric("longitude"),
+  description: text("description"), // Optional context
+
+  status: sosStatusEnum("status").default("ACTIVE"),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: uuid("resolved_by").references(() => users.id), // Staff who handled it
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -206,16 +398,33 @@ export const complaintStatusHistory = pgTable("complaint_status_history", {
   changedAt: timestamp("changed_at").defaultNow(),
 });
 
-export const lateEntryRequests = pgTable("late_entry_requests", {
+export const gatePasses = pgTable("gate_passes", {
   id: uuid("id").defaultRandom().primaryKey(),
-  residentId: uuid("resident_id")
+  userId: uuid("user_id")
     .references(() => users.id)
     .notNull(),
-  reason: text("reason").notNull(),
+
+  // MERGED: Add the type field here so we know if it's Overnight or just a day pass
   type: gatePassTypeEnum("type").notNull(),
-  fromTime: timestamp("from_time").notNull(),
-  toTime: timestamp("to_time").notNull(),
-  status: approvalStatusEnum("status").default("PENDING"),
+
+  location: varchar("location", { length: 255 }).notNull(),
+  reason: text("reason").notNull(),
+
+  // Permission Times (Requested)
+  outTime: timestamp("out_time").notNull(),
+  inTime: timestamp("in_time").notNull(),
+
+  status: gatePassStatusEnum("status").default("PENDING"),
+
+  // The Digital Key
+  qrToken: text("qr_token"), // Nullable initially, generated on APPROVAL
+
+  approvedBy: uuid("approved_by").references(() => users.id),
+
+  // Guard Audit Trail
+  actualOutTime: timestamp("actual_out_time"),
+  actualInTime: timestamp("actual_in_time"),
+
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -225,9 +434,14 @@ export const visitorRequests = pgTable("visitor_requests", {
     .references(() => users.id)
     .notNull(),
 
+  purpose: varchar("purpose", { length: 255 })
+    .notNull()
+    .default("General Visit"),
+
   // New Fields for Authenticity
   visitorName: varchar("visitor_name", { length: 100 }).notNull(),
   visitorPhone: varchar("visitor_phone", { length: 15 }).notNull(),
+  relation: varchar("relation", { length: 50 }).notNull().default("Brother"),
   entryCode: varchar("entry_code", { length: 6 }).notNull(), // 6-digit Security Code
 
   visitDate: timestamp("visit_date").notNull(),
@@ -351,6 +565,9 @@ export const paymentCategoryEnum = pgEnum("payment_category", [
   "FINE",
   "MESS_FEE",
   "SECURITY_DEPOSIT",
+  "LIBRARY_MEMBERSHIP", // NEW
+  "LIBRARY_FINE", // NEW
+  "GYM_MEMBERSHIP", // NEW
 ]);
 
 export const paymentStatusEnum = pgEnum("payment_status", [
@@ -385,4 +602,44 @@ export const payments = pgTable("payments", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at"),
+});
+
+// NEW: Defines Gym Packages (Gold, Platinum, etc.) per Hostel
+export const gymPlans = pgTable("gym_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  hostelId: uuid("hostel_id")
+    .references(() => hostels.id)
+    .notNull(),
+
+  name: varchar("name", { length: 100 }).notNull(), // e.g. "Gold", "Platinum"
+  duration: planDurationEnum("duration").notNull(),
+  price: integer("price").notNull(),
+
+  // Specific features for this tier
+  description: text("description"), // e.g. "Includes Cardio + Weights + Trainer"
+  hasTrainer: boolean("has_trainer").default(false),
+  accessHours: varchar("access_hours", { length: 100 }), // e.g. "6AM - 10PM"
+
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// NEW: Tracks User Gym Subscriptions
+export const gymMemberships = pgTable("gym_memberships", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  planId: uuid("plan_id")
+    .references(() => gymPlans.id)
+    .notNull(),
+
+  startDate: timestamp("start_date").defaultNow().notNull(),
+  endDate: timestamp("end_date").notNull(),
+
+  status: membershipStatusEnum("status").default("ACTIVE"),
+
+  paymentId: uuid("payment_id").references(() => payments.id),
+
+  createdAt: timestamp("created_at").defaultNow(),
 });

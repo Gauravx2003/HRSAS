@@ -16,7 +16,7 @@ import { useDispatch } from "react-redux";
 import { setCredentials } from "../src/store/authSlice";
 import { Feather } from "@expo/vector-icons";
 
-// ⚠️ REPLACE WITH YOUR LAPTOP'S LOCAL IP ADDRESS
+// LAPTOP'S LOCAL IP ADDRESS
 // e.g., http://192.168.1.5:5000/api
 const API_URL = "http://192.168.31.29:5000/api";
 
@@ -50,6 +50,10 @@ export default function LoginScreen() {
       //2. Redirect based on Role
       if (user.role === "RESIDENT") {
         router.replace("/(resident)/dashboard");
+      } else if (user.role === "SECURITY") {
+        router.replace("/(security)/dashboard");
+      } else if (user.role === "STAFF") {
+        router.replace("/(staff)/dashboard");
       } else {
         Alert.alert("Access Denied", "Admins must use the Web Portal.");
       }
