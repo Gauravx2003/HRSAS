@@ -14,6 +14,24 @@ import {
 
 import { MESS_ISSUE_CATEGORIES } from "../../../shared/constants";
 
+export const resourceTypeEnum = pgEnum("resource_type", [
+  "LAUNDRY",
+  "BADMINTON",
+]);
+
+export const bookingStatusEnum = pgEnum("booking_status", [
+  "CONFIRMED", // Booked for a future slot
+  "ACTIVE", // Currently washing clothes right now
+  "COMPLETED", // Cycle finished
+  "CANCELLED", // User cancelled or missed grace period
+]);
+
+export const waitlistStatusEnum = pgEnum("waitlist_status", [
+  "WAITING", // In the queue
+  "FULFILLED", // Got a slot!
+  "EXPIRED", // Left queue or missed their turn
+]);
+
 export const roleEnum = pgEnum("role", [
   "RESIDENT",
   "STAFF",
@@ -775,4 +793,51 @@ export const attendanceLogs = pgTable("attendance_logs", {
   // Optional: Store location for proof
   latitude: numeric("latitude"),
   longitude: numeric("longitude"),
+});
+
+// 1. The Machines/Courts
+export const resources = pgTable("resources", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  hostelId: uuid("hostel_id")
+    .references(() => hostels.id)
+    .notNull(),
+
+  name: text("name").notNull(), // e.g., "Washing Machine 1", "Court A"
+  type: resourceTypeEnum("type").notNull(),
+
+  isOperational: boolean("is_operational").default(true), // Admin can disable broken machines
+});
+
+// 2. The Time Slots (The BookMyShow Seats)
+export const bookings = pgTable("bookings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  resourceId: uuid("resource_id")
+    .references(() => resources.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+
+  startTime: timestamp("start_time").notNull(), // e.g., 9:00 AM
+  endTime: timestamp("end_time").notNull(), // e.g., 9:45 AM
+
+  status: bookingStatusEnum("status").default("CONFIRMED").notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// 3. The Smart Queue
+export const waitlists = pgTable("waitlists", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  hostelId: uuid("hostel_id")
+    .references(() => hostels.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+
+  type: resourceTypeEnum("type").notNull(), // e.g., Waiting for ANY Laundry machine
+
+  status: waitlistStatusEnum("status").default("WAITING").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
 });

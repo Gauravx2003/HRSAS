@@ -8,79 +8,45 @@ import {
   complaintStatusHistory,
   hostels,
   messMenu,
+  resources,
 } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 
 import { eq } from "drizzle-orm";
 
-const RULES = {
-  BREAKFAST: {
-    time: "08:00",
-    cutoffHours: 12,
-    items: ["Poha", "Tea/Coffee", "Oats", "Banana"],
-  },
-  LUNCH: {
-    time: "13:00",
-    cutoffHours: 3,
-    items: ["Paneer Butter Masala", "Dal Tadka", "Rice", "Chapati", "Salad"],
-  },
-  SNACKS: {
-    time: "17:00",
-    cutoffHours: 1,
-    items: ["Samosa", "Tea", "Biscuits"],
-  },
-  DINNER: {
-    time: "20:00",
-    cutoffHours: 4,
-    items: ["Mix Veg", "Dal Fry", "Jeera Rice", "Roti", "Gulab Jamun"],
-  },
-};
-
 async function seed() {
   console.log("🌱 Seeding database...");
 
-  const [complaint] = await db
+  const [hostel] = await db
     .select()
-    .from(complaints)
-    .where(eq(complaints.title, "Fan Broke"));
+    .from(hostels)
+    .where(eq(hostels.name, "Boys Hostel A"));
 
-  const now = new Date();
-  if (!complaint.assignedStaff) {
-    throw new Error(
-      "Cannot update status: No staff is assigned to this complaint.",
-    );
-  }
-
-  await db.insert(complaintStatusHistory).values({
-    complaintId: complaint.id,
-    newStatus: "ASSIGNED",
-    oldStatus: "CREATED",
-    changedAt: now,
+  await db.insert(resources).values({
+    hostelId: hostel.id,
+    name: "Laundry 1",
+    type: "LAUNDRY",
   });
 
-  await db.insert(complaintStatusHistory).values({
-    complaintId: complaint.id,
-    newStatus: "IN_PROGRESS",
-    oldStatus: "ASSIGNED",
-    changedAt: now,
-    changedBy: complaint.assignedStaff,
+  await db.insert(resources).values({
+    hostelId: hostel.id,
+    name: "Laundry 2",
+    type: "LAUNDRY",
   });
 
-  await db.insert(complaintStatusHistory).values({
-    complaintId: complaint.id,
-    newStatus: "RESOLVED",
-    oldStatus: "IN_PROGRESS",
-    changedAt: new Date(),
-    changedBy: complaint.assignedStaff,
+  await db.insert(resources).values({
+    hostelId: hostel.id,
+    name: "Laundry 3",
+    type: "LAUNDRY",
   });
 
-  await db.insert(complaintStatusHistory).values({
-    complaintId: complaint.id,
-    newStatus: "CLOSED",
-    oldStatus: "RESOLVED",
-    changedAt: new Date(),
-    changedBy: complaint.residentId,
+  await db.insert(resources).values({
+    hostelId: hostel.id,
+    name: "Laundry 4",
+    type: "LAUNDRY",
   });
+
+  console.log("✅ Resources seeded");
 
   process.exit(0);
 }

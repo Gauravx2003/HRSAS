@@ -92,3 +92,25 @@ export const getComplaintHistory = async (
   const response = await api.get(`/complaints/${complaintId}/history`);
   return response.data;
 };
+
+// 7. Upload Complaint Attachments
+export const uploadComplaintAttachments = async (
+  complaintId: string,
+  imageUris: string[],
+) => {
+  const formData = new FormData();
+  imageUris.forEach((uri, index) => {
+    formData.append("images", {
+      uri,
+      name: `complaint_image_${index}.jpg`,
+      type: "image/jpeg",
+    } as any);
+  });
+
+  const response = await api.post(
+    `/complaints/${complaintId}/attachments`,
+    formData,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+  return response.data;
+};

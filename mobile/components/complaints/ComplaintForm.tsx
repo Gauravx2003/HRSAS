@@ -10,11 +10,15 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import {
   raiseComplaint,
+  uploadComplaintAttachments,
   ComplaintCategory,
 } from "@/src/services/complaints.service";
+import * as ImagePicker from "expo-image-picker";
+import { Feather } from "@expo/vector-icons";
 
 interface Props {
   categories: ComplaintCategory[];
@@ -28,6 +32,30 @@ export function ComplaintForm({ categories, roomId, onSubmitSuccess }: Props) {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+
+  const pickImages = async () => {
+    if (selectedImages.length >= 5) {
+      Alert.alert("Limit", "You can attach up to 5 images.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: 5 - selectedImages.length,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      const uris = result.assets.map((a) => a.uri);
+      setSelectedImages((prev) => [...prev, ...uris].slice(0, 5));
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async () => {
     if (!title || !desc || !selectedCategory) {
@@ -41,16 +69,26 @@ export function ComplaintForm({ categories, roomId, onSubmitSuccess }: Props) {
 
     try {
       setSubmitting(true);
-      await raiseComplaint({
+      const newComplaint = await raiseComplaint({
         categoryId: selectedCategory,
         title,
         description: desc,
         roomId,
       });
+
+      if (selectedImages.length > 0 && newComplaint?.id) {
+        try {
+          await uploadComplaintAttachments(newComplaint.id, selectedImages);
+        } catch (uploadErr) {
+          console.error("Failed to upload attachments:", uploadErr);
+        }
+      }
+
       Alert.alert("Success", "Complaint raised successfully!");
       setTitle("");
       setDesc("");
       setSelectedCategory("");
+      setSelectedImages([]);
       onSubmitSuccess();
     } catch (error) {
       console.error(error);
@@ -116,6 +154,40 @@ export function ComplaintForm({ categories, roomId, onSubmitSuccess }: Props) {
             onChangeText={setDesc}
           />
 
+          <Text className="font-sn-pro-bold" style={styles.label}>
+            Attach Photos (optional)
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pickerRow}
+          >
+            {selectedImages.map((uri, idx) => (
+              <View key={idx} style={styles.pickerThumbWrap}>
+                <Image source={{ uri }} style={styles.pickerThumb} />
+                <TouchableOpacity
+                  style={styles.pickerRemoveBtn}
+                  onPress={() => removeImage(idx)}
+                >
+                  <Feather name="x" size={14} color="white" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {selectedImages.length < 5 && (
+              <TouchableOpacity
+                style={styles.pickerAddBtn}
+                onPress={pickImages}
+              >
+                <Feather name="camera" size={22} color="#94A3B8" />
+                <Text style={styles.pickerAddText}>
+                  {selectedImages.length === 0
+                    ? "Add"
+                    : `${selectedImages.length}/5`}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+
           <TouchableOpacity
             style={[styles.submitBtn, submitting && { opacity: 0.7 }]}
             onPress={handleSubmit}
@@ -175,4 +247,47 @@ const styles = StyleSheet.create({
   chipInactive: { backgroundColor: "white", borderColor: "#E5E7EB" },
   chipTextActive: { color: "white", fontWeight: "500" },
   chipTextInactive: { color: "#4B5563", fontWeight: "500" },
+  pickerRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+    paddingBottom: 4,
+    marginBottom: 16,
+  },
+  pickerThumbWrap: {
+    position: "relative",
+  },
+  pickerThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    backgroundColor: "#F1F5F9",
+  },
+  pickerRemoveBtn: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#EF4444",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pickerAddBtn: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  pickerAddText: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontWeight: "600",
+  },
 });

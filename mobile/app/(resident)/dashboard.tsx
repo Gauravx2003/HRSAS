@@ -214,6 +214,13 @@ export default function ResidentDashboard() {
       color: "bg-green-100",
       iconColor: "#10B981",
     },
+    {
+      label: "Laundry",
+      icon: "droplet",
+      route: "/(resident)/laundry",
+      color: "bg-blue-100",
+      iconColor: "#0D9488",
+    },
   ];
 
   // ── Data Fetching ───────────────────────────────────────

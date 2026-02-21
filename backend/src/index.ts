@@ -29,7 +29,9 @@ import attendanceRoutes from "./modules/attendance/attendance.routes";
 import campusHubAttachmentsRoutes from "./modules/campusHub/campusHubAttachments.routes";
 import smartMessRoutes from "./modules/smartMess/smartMess.routes";
 import userRoutes from "./modules/users/users.routes";
+import orchestratorRoutes from "./modules/orchestrator/orchestrator.routes";
 import { startLibraryCron } from "./jobs/library.job";
+import { startOrchestratorCron } from "./jobs/orchestrator.job";
 
 const app = express();
 
@@ -45,6 +47,7 @@ app.get("/health", (_req: Request, res: Response) => {
 // });
 
 startLibraryCron();
+startOrchestratorCron();
 
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
@@ -67,6 +70,7 @@ app.use("/api/library", libraryRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/smart-mess", smartMessRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/orchestrator", orchestratorRoutes);
 
 const PORT = process.env.PORT || 5000;
 
