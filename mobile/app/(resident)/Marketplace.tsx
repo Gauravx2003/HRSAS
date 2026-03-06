@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -117,6 +117,9 @@ export default function MarketplaceScreen() {
   const [bidsItem, setBidsItem] = useState<MarketplaceItem | null>(null);
 
   const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [activeImageIndices, setActiveImageIndices] = useState<
+    Record<string, number>
+  >({});
 
   // ─── CHAT MODAL (DUMMY) ───
   const [chatVisible, setChatVisible] = useState(false);
@@ -428,28 +431,54 @@ export default function MarketplaceScreen() {
     const hasImages = item.attachments && item.attachments.length > 0;
     const condColor = CONDITION_COLORS[item.condition] || CONDITION_COLORS.GOOD;
     const isFree = item.price === 0;
+    const activeIndex = activeImageIndices[item.id] || 0;
+
+    const handleImageScroll = (event: any) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / CARD_WIDTH);
+      setActiveImageIndices((prev) => ({ ...prev, [item.id]: index }));
+    };
 
     return (
       <View style={s.card}>
-        {/* Image Section */}
+        {/* Image Section - Swipeable Carousel */}
         {hasImages ? (
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setViewerImage(item.attachments![0].fileURL)}
-          >
-            <Image
-              source={{ uri: item.attachments![0].fileURL }}
-              style={s.cardImage}
-              resizeMode="cover"
+          <View>
+            <FlatList
+              data={item.attachments!}
+              keyExtractor={(att) => att.id}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleImageScroll}
+              renderItem={({ item: att }) => (
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => setViewerImage(att.fileURL)}
+                >
+                  <Image
+                    source={{ uri: att.fileURL }}
+                    style={[s.cardImage, { width: CARD_WIDTH }]}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              )}
             />
-            {/* Image count badge */}
+            {/* Dot Indicators */}
             {item.attachments!.length > 1 && (
-              <View style={s.imageCountBadge}>
-                <Feather name="image" size={12} color="white" />
-                <Text style={s.imageCountText}>{item.attachments!.length}</Text>
+              <View style={s.dotsContainer}>
+                {item.attachments!.map((_, idx) => (
+                  <View
+                    key={idx}
+                    style={[
+                      s.dot,
+                      idx === activeIndex ? s.dotActive : s.dotInactive,
+                    ]}
+                  />
+                ))}
               </View>
             )}
-          </TouchableOpacity>
+          </View>
         ) : (
           <View style={[s.cardImage, s.noImagePlaceholder]}>
             <Feather name="camera-off" size={32} color="#D1D5DB" />
@@ -482,25 +511,6 @@ export default function MarketplaceScreen() {
           <Text style={s.cardDesc} numberOfLines={2}>
             {item.description}
           </Text>
-
-          {/* Multiple Image Thumbnails */}
-          {hasImages && item.attachments!.length > 1 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={s.thumbRow}
-            >
-              {item.attachments!.map((att) => (
-                <TouchableOpacity
-                  key={att.id}
-                  onPress={() => setViewerImage(att.fileURL)}
-                  activeOpacity={0.85}
-                >
-                  <Image source={{ uri: att.fileURL }} style={s.thumbImg} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
 
           {/* Seller Info & CTA */}
           <View style={s.cardFooter}>
@@ -1652,19 +1662,34 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  imageCountBadge: {
-    position: "absolute",
-    bottom: 12,
-    right: 12,
-    backgroundColor: "rgba(0,0,0,0.6)",
+  dotsContainer: {
     flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    position: "absolute",
+    bottom: 10,
+    left: 0,
+    right: 0,
+    gap: 6,
   },
-  imageCountText: { color: "white", fontSize: 12, fontWeight: "600" },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  dotActive: {
+    backgroundColor: "white",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  dotInactive: {
+    backgroundColor: "rgba(255,255,255,0.5)",
+  },
 
   priceBadge: {
     position: "absolute",
@@ -1713,13 +1738,6 @@ const s = StyleSheet.create({
     color: "#6B7280",
     lineHeight: 20,
     marginBottom: 12,
-  },
-  thumbRow: { gap: 8, marginBottom: 12 },
-  thumbImg: {
-    width: 56,
-    height: 56,
-    borderRadius: 10,
-    backgroundColor: "#F1F5F9",
   },
   cardFooter: {
     flexDirection: "row",

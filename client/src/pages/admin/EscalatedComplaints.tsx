@@ -377,7 +377,9 @@ const EscalatedComplaints = () => {
                       <UserRoundX className="w-3 h-3" />
                     )}
                     Currently assigned to:{" "}
-                    {complaint.assignedStaffName ?? "No one"}
+                    <span className="font-bold text-slate-700">
+                      {complaint.assignedStaffName ?? "No one"}
+                    </span>
                   </div>
 
                   <button

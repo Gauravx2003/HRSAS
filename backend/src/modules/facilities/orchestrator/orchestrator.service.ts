@@ -316,9 +316,15 @@ export const cancelAndAutoAssign = async (bookingId: string) => {
     const MINIMUM_USABLE_MINUTES = 25; // Minimum time needed to actually use the resource
     const now = new Date();
 
-    // Calculate difference in minutes
+    // For future slots, use the original start time; for already-started slots, use now
+    const effectiveStartTime = new Date(
+      Math.max(now.getTime(), bookingToCancel.startTime.getTime()),
+    );
+
+    // Calculate usable time remaining from the effective start
     const remainingMinutes = Math.round(
-      (bookingToCancel.endTime.getTime() - now.getTime()) / 60000,
+      (bookingToCancel.endTime.getTime() - effectiveStartTime.getTime()) /
+        60000,
     );
 
     // If there isn't enough time left, STOP HERE. Do not assign to waitlist.
@@ -361,7 +367,7 @@ export const cancelAndAutoAssign = async (bookingId: string) => {
       await tx.insert(bookings).values({
         resourceId: bookingToCancel.resourceId,
         userId: nextInLine.userId,
-        startTime: now, // Start right now
+        startTime: effectiveStartTime, // Original start time for future slots, now for past slots
         endTime: bookingToCancel.endTime, // Keep the original hard boundary
         status: "CONFIRMED",
       });

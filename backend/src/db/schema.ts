@@ -58,6 +58,7 @@ export const roleEnum = pgEnum("role", [
   "ADMIN",
   "SECURITY",
   "COOK",
+  "LIBRARIAN",
 ]);
 
 export const staffTypeEnum = pgEnum("staff_type", ["IN_HOUSE", "VENDOR"]);
@@ -212,26 +213,28 @@ export const libraryBooks = pgTable("library_books", {
   organizationId: uuid("organization_id")
     .references(() => organizations.id)
     .notNull(),
-  hostelId: uuid("hostel_id").references(() => hostels.id), // Books can belong to specific hostels
+  hostelId: uuid("hostel_id").references(() => hostels.id),
 
   title: varchar("title", { length: 255 }).notNull(),
   author: varchar("author", { length: 255 }).notNull(),
-  isbn: varchar("isbn", { length: 50 }),
+  isbn: varchar("isbn", { length: 50 }), // The generic ISBN
   coverUrl: text("cover_url"),
+  category: text("category").notNull(),
 
-  totalCopies: integer("total_copies").default(1).notNull(),
-  availableCopies: integer("available_copies").default(1).notNull(),
+  // Notice: We remove totalCopies and availableCopies here!
+  // We will calculate those dynamically based on the copies table.
+});
 
-  category: text("category").notNull(), // e.g., "Engineering"
-  subCategory: text("sub_category").notNull(), // e.g., "Computer Science"
-  tags: text("tags").array(),
+export const bookCopies = pgTable("book_copies", {
+  id: uuid("id").defaultRandom().primaryKey(), // This is the unique barcode/accession number!
+  bookId: uuid("book_id")
+    .references(() => libraryBooks.id)
+    .notNull(), // Links back to the Title
 
-  // Digital Book Fields
-  isDigital: boolean("is_digital").default(false),
-  downloadUrl: text("download_url"), // Secure URL for PDF/EPUB
-  format: bookFormatEnum("format").default("PHYSICAL"),
+  // Specific to this physical item
 
-  status: bookInventoryStatusEnum("status").default("ACTIVE"),
+  status: bookInventoryStatusEnum("status").default("ACTIVE"), // "ACTIVE", "ARCHIVED", "MAINTENANCE", "LOST_FOREVER"
+
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -240,8 +243,10 @@ export const libraryTransactions = pgTable("library_transactions", {
   userId: uuid("user_id")
     .references(() => users.id)
     .notNull(),
-  bookId: uuid("book_id")
-    .references(() => libraryBooks.id)
+
+  // CRITICAL CHANGE: Link to the specific physical copy!
+  copyId: uuid("copy_id")
+    .references(() => bookCopies.id)
     .notNull(),
 
   issueDate: timestamp("issue_date").defaultNow().notNull(),
@@ -250,10 +255,8 @@ export const libraryTransactions = pgTable("library_transactions", {
 
   status: transactionStatusEnum("status").default("BORROWED"),
 
-  // Fine Logic
   fineAmount: integer("fine_amount").default(0),
   isFinePaid: boolean("is_fine_paid").default(false),
-  finePaymentId: uuid("fine_payment_id").references(() => payments.id), // Link to payment when paid
 });
 
 export const bookReservations = pgTable("book_reservations", {
