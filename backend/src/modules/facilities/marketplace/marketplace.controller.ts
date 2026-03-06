@@ -3,6 +3,10 @@ import { Authenticate } from "../../../middleware/auth";
 import {
   createListing,
   getAvailableListings,
+  getMyListings,
+  getMyBids,
+  getBidsForItem,
+  deleteListing,
   placeBid,
   acceptBid,
   confirmHandover,
@@ -50,6 +54,61 @@ export const getListingsController = async (
     res.json(items);
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch listings" });
+  }
+};
+
+// ─── 1b. SELLER DASHBOARD ───
+
+export const getMyListingsController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const sellerId = req.user!.userId;
+    const items = await getMyListings(sellerId);
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch your listings" });
+  }
+};
+
+export const getMyBidsController = async (req: Authenticate, res: Response) => {
+  try {
+    const buyerId = req.user!.userId;
+    const bids = await getMyBids(buyerId);
+    res.json(bids);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch your bids" });
+  }
+};
+
+export const getBidsForItemController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const sellerId = req.user!.userId;
+    const { itemId } = req.params;
+    const bids = await getBidsForItem(sellerId, itemId);
+    res.json(bids);
+  } catch (error: any) {
+    res.status(400).json({ message: error.message || "Failed to fetch bids" });
+  }
+};
+
+export const deleteListingController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const sellerId = req.user!.userId;
+    const { itemId } = req.params;
+    const cancelled = await deleteListing(sellerId, itemId);
+    res.json({ message: "Listing removed.", item: cancelled });
+  } catch (error: any) {
+    res
+      .status(400)
+      .json({ message: error.message || "Failed to delete listing" });
   }
 };
 

@@ -1,6 +1,11 @@
 import { db } from "../../../db";
-import { marketplaceItems, itemBids, users } from "../../../db/schema";
-import { eq, and, ne, desc, relations } from "drizzle-orm";
+import {
+  marketplaceItems,
+  itemBids,
+  users,
+  marketplaceAttachments,
+} from "../../../db/schema";
+import { eq, and, ne, desc } from "drizzle-orm";
 
 // ─── 1. CORE LISTING & BROWSING ───
 
@@ -42,8 +47,102 @@ export const getAvailableListings = async (hostelId: string) => {
       seller: {
         columns: { name: true, phone: true },
       },
+      // Fetch images for the feed
+      attachments: {
+        columns: { id: true, fileURL: true },
+      },
     },
   });
+};
+
+// ─── 1b. SELLER DASHBOARD ───
+
+export const getMyListings = async (sellerId: string) => {
+  return await db.query.marketplaceItems.findMany({
+    where: eq(marketplaceItems.sellerId, sellerId),
+    orderBy: [desc(marketplaceItems.createdAt)],
+    with: {
+      attachments: {
+        columns: { id: true, fileURL: true },
+      },
+      bids: {
+        with: {
+          buyer: {
+            columns: { name: true, phone: true },
+          },
+        },
+        orderBy: [desc(itemBids.createdAt)],
+      },
+    },
+  });
+};
+
+export const getBidsForItem = async (sellerId: string, itemId: string) => {
+  // Verify the seller owns this item
+  const item = await db.query.marketplaceItems.findFirst({
+    where: and(
+      eq(marketplaceItems.id, itemId),
+      eq(marketplaceItems.sellerId, sellerId),
+    ),
+  });
+
+  if (!item) throw new Error("Item not found or unauthorized.");
+
+  return await db.query.itemBids.findMany({
+    where: eq(itemBids.itemId, itemId),
+    orderBy: [desc(itemBids.createdAt)],
+    with: {
+      buyer: {
+        columns: { name: true, phone: true },
+      },
+    },
+  });
+};
+
+// ─── 1c. BUYER BIDDING HISTORY ───
+
+export const getMyBids = async (buyerId: string) => {
+  return await db.query.itemBids.findMany({
+    where: eq(itemBids.buyerId, buyerId),
+    orderBy: [desc(itemBids.createdAt)],
+    with: {
+      item: {
+        with: {
+          seller: {
+            columns: { name: true, phone: true },
+          },
+          attachments: {
+            columns: { id: true, fileURL: true },
+          },
+        },
+      },
+    },
+  });
+};
+
+export const deleteListing = async (sellerId: string, itemId: string) => {
+  const [item] = await db
+    .select()
+    .from(marketplaceItems)
+    .where(eq(marketplaceItems.id, itemId));
+
+  if (!item || item.sellerId !== sellerId) throw new Error("Unauthorized.");
+  if (item.status !== "AVAILABLE")
+    throw new Error("Only AVAILABLE items can be deleted.");
+
+  const [cancelled] = await db
+    .update(marketplaceItems)
+    .set({ status: "CANCELLED" })
+    .where(eq(marketplaceItems.id, itemId))
+    .returning();
+
+  // Reject any pending bids
+  await db
+    .update(itemBids)
+    .set({ status: "REJECTED" })
+    .where(and(eq(itemBids.itemId, itemId), eq(itemBids.status, "PENDING")));
+
+  return cancelled;
 };
 
 // ─── 2. THE BIDDING ENGINE ───

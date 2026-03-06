@@ -221,6 +221,13 @@ export default function ResidentDashboard() {
       color: "bg-blue-100",
       iconColor: "#0D9488",
     },
+    {
+      label: "Marketplace",
+      icon: "shopping-cart",
+      route: "/(resident)/Marketplace",
+      color: "bg-blue-100",
+      iconColor: "#328ad6ff",
+    },
   ];
 
   // ── Data Fetching ───────────────────────────────────────

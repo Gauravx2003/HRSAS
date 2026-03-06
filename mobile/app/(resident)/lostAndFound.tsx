@@ -32,6 +32,7 @@ import {
   LostItem,
   FoundItem,
 } from "../../src/services/lostAndFound.service";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function LostAndFoundScreen() {
   const [activeTab, setActiveTab] = useState<"report" | "found" | "history">(
@@ -318,184 +319,198 @@ export default function LostAndFoundScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Lost & Found</Text>
-      </View>
+      <LinearGradient
+        colors={["#1E1B4B", "#312E81"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <Text className="font-sn-pro-bold" style={styles.headerTitle}>
+          Lost & Found
+        </Text>
+        <Text style={styles.headerSub}>Report lost items and find them</Text>
+      </LinearGradient>
 
       {/* TABS */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "report" && styles.tabActive]}
-          onPress={() => setActiveTab("report")}
-        >
-          <Text
-            className="font-sn-pro-bold"
-            style={
-              activeTab === "report"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
+      <View style={styles.inner}>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "report" && styles.tabActive]}
+            onPress={() => setActiveTab("report")}
           >
-            Report Lost
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "found" && styles.tabActive]}
-          onPress={() => setActiveTab("found")}
-        >
-          <Text
-            className="font-sn-pro-bold"
-            style={
-              activeTab === "found"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
+            <Text
+              className="font-sn-pro-bold"
+              style={
+                activeTab === "report"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              Report Lost
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "found" && styles.tabActive]}
+            onPress={() => setActiveTab("found")}
           >
-            Found Items
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "history" && styles.tabActive]}
-          onPress={() => setActiveTab("history")}
-        >
-          <Text
-            className="font-sn-pro-bold"
-            style={
-              activeTab === "history"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
+            <Text
+              className="font-sn-pro-bold"
+              style={
+                activeTab === "found"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              Found Items
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "history" && styles.tabActive]}
+            onPress={() => setActiveTab("history")}
           >
-            My History
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text
+              className="font-sn-pro-bold"
+              style={
+                activeTab === "history"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              My History
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* CONTENT */}
-      <View style={styles.content}>
-        {activeTab === "report" && (
-          <FlatList
-            data={[]}
-            renderItem={() => null}
-            ListHeaderComponent={
-              <View style={styles.form}>
-                <Text style={styles.label}>What did you lose?</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Blue Wallet, AirPods"
-                  value={title}
-                  onChangeText={setTitle}
-                />
-
-                <Text style={styles.label}>Category</Text>
-                <View style={styles.catRow}>
-                  {categories.map((cat) => (
-                    <TouchableOpacity
-                      key={cat}
-                      style={[
-                        styles.catChip,
-                        category === cat && styles.catChipActive,
-                      ]}
-                      onPress={() => setCategory(cat)}
-                    >
-                      <Text
-                        style={[
-                          styles.catText,
-                          category === cat && styles.catTextActive,
-                        ]}
-                      >
-                        {cat}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <Text style={styles.label}>Where was it lost? (Approx)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Library, Canteen"
-                  value={location}
-                  onChangeText={setLocation}
-                />
-
-                <Text style={styles.label}>Date Lost</Text>
-                <TouchableOpacity
-                  onPress={() => setShowDatePicker(true)}
-                  style={styles.dateBtn}
-                >
-                  <Feather name="calendar" size={16} color="#4B5563" />
-                  <Text style={styles.dateText}>{dateLost.toDateString()}</Text>
-                </TouchableOpacity>
-                {showDatePicker && (
-                  <DateTimePicker
-                    value={dateLost}
-                    mode="date"
-                    onChange={(e, d) => {
-                      setShowDatePicker(false);
-                      if (d) setDateLost(d);
-                    }}
+        {/* CONTENT */}
+        <View style={styles.content}>
+          {activeTab === "report" && (
+            <FlatList
+              data={[]}
+              renderItem={() => null}
+              ListHeaderComponent={
+                <View style={styles.form}>
+                  <Text style={styles.label}>What did you lose?</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Blue Wallet, AirPods"
+                    value={title}
+                    onChangeText={setTitle}
                   />
-                )}
 
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { height: 100, textAlignVertical: "top" },
-                  ]}
-                  placeholder="Describe the item..."
-                  multiline
-                  value={description}
-                  onChangeText={setDescription}
-                />
+                  <Text style={styles.label}>Category</Text>
+                  <View style={styles.catRow}>
+                    {categories.map((cat) => (
+                      <TouchableOpacity
+                        key={cat}
+                        style={[
+                          styles.catChip,
+                          category === cat && styles.catChipActive,
+                        ]}
+                        onPress={() => setCategory(cat)}
+                      >
+                        <Text
+                          style={[
+                            styles.catText,
+                            category === cat && styles.catTextActive,
+                          ]}
+                        >
+                          {cat}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
 
-                <TouchableOpacity
-                  style={styles.submitBtn}
-                  onPress={handleReport}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="white" />
-                  ) : (
-                    <Text style={styles.submitText}>Report Item</Text>
+                  <Text style={styles.label}>Where was it lost? (Approx)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Library, Canteen"
+                    value={location}
+                    onChangeText={setLocation}
+                  />
+
+                  <Text style={styles.label}>Date Lost</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowDatePicker(true)}
+                    style={styles.dateBtn}
+                  >
+                    <Feather name="calendar" size={16} color="#4B5563" />
+                    <Text style={styles.dateText}>
+                      {dateLost.toDateString()}
+                    </Text>
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={dateLost}
+                      mode="date"
+                      onChange={(e, d) => {
+                        setShowDatePicker(false);
+                        if (d) setDateLost(d);
+                      }}
+                    />
                   )}
-                </TouchableOpacity>
-              </View>
-            }
-          />
-        )}
 
-        {activeTab === "found" && (
-          <FlatList
-            data={foundItems}
-            keyExtractor={(item) => item.id}
-            renderItem={renderFoundItem}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            contentContainerStyle={{ padding: 20 }}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No found items reported yet.</Text>
-            }
-          />
-        )}
+                  <Text style={styles.label}>Description</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { height: 100, textAlignVertical: "top" },
+                    ]}
+                    placeholder="Describe the item..."
+                    multiline
+                    value={description}
+                    onChangeText={setDescription}
+                  />
 
-        {activeTab === "history" && (
-          <FlatList
-            data={myItems}
-            keyExtractor={(item) => item.id}
-            renderItem={renderHistoryItem}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            contentContainerStyle={{ padding: 20 }}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>
-                You haven't reported anything.
-              </Text>
-            }
-          />
-        )}
+                  <TouchableOpacity
+                    style={styles.submitBtn}
+                    onPress={handleReport}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="white" />
+                    ) : (
+                      <Text style={styles.submitText}>Report Item</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              }
+            />
+          )}
+
+          {activeTab === "found" && (
+            <FlatList
+              data={foundItems}
+              keyExtractor={(item) => item.id}
+              renderItem={renderFoundItem}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              contentContainerStyle={{ padding: 20 }}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  No found items reported yet.
+                </Text>
+              }
+            />
+          )}
+
+          {activeTab === "history" && (
+            <FlatList
+              data={myItems}
+              keyExtractor={(item) => item.id}
+              renderItem={renderHistoryItem}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+              contentContainerStyle={{ padding: 20 }}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  You haven't reported anything.
+                </Text>
+              }
+            />
+          )}
+        </View>
       </View>
       {/* Fullscreen Image Viewer */}
       <Modal
@@ -531,12 +546,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F9FAFB",
-    paddingHorizontal: 5,
+  },
+  inner: {
+    flex: 1,
+    paddingHorizontal: 20,
     paddingTop: 10,
   },
-  header: { padding: 20, backgroundColor: "white" },
-  headerTitle: { fontSize: 24, fontWeight: "bold", color: "#111827" },
-
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerTitle: {
+    fontSize: 24,
+    color: "#FFFFFF",
+  },
+  headerSub: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 4,
+  },
   tabContainer: {
     flexDirection: "row",
     backgroundColor: "#E5E7EB",

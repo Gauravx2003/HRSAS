@@ -948,6 +948,19 @@ export const marketplaceItemsRelations = relations(
     }),
     // An item can have many bids
     bids: many(itemBids),
+    // An item can have many image attachments
+    attachments: many(marketplaceAttachments),
+  }),
+);
+
+// 3. Marketplace Attachments Relations
+export const marketplaceAttachmentsRelations = relations(
+  marketplaceAttachments,
+  ({ one }) => ({
+    item: one(marketplaceItems, {
+      fields: [marketplaceAttachments.itemId],
+      references: [marketplaceItems.id],
+    }),
   }),
 );
 

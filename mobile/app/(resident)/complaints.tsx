@@ -21,6 +21,7 @@ import {
 import { ComplaintHistoryList } from "@/components/complaints/ComplaintHistoryList";
 import { ComplaintForm } from "@/components/complaints/ComplaintForm";
 import { RejectResolutionModal } from "@/components/complaints/RejectResolutionModal";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function ComplaintsScreen() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -95,68 +96,83 @@ export default function ComplaintsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Complaints</Text>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <LinearGradient
+        colors={["#1E1B4B", "#312E81"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <Text className="font-sn-pro-bold" style={styles.headerTitle}>
+          Complaints
+        </Text>
+        <Text style={styles.headerSub}>
+          Raise & track your hostel complaints
+        </Text>
+      </LinearGradient>
 
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "history" && styles.tabActive]}
-          onPress={() => setActiveTab("history")}
-        >
-          <Text
-            className="font-sn-pro-bold"
-            style={
-              activeTab === "history"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
+      {/* Content below header */}
+      <View style={styles.inner}>
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "history" && styles.tabActive]}
+            onPress={() => setActiveTab("history")}
           >
-            History
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "new" && styles.tabActive]}
-          onPress={() => setActiveTab("new")}
-        >
-          <Text
-            className="font-sn-pro-bold"
-            style={
-              activeTab === "new"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
+            <Text
+              className="font-sn-pro-bold"
+              style={
+                activeTab === "history"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              History
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "new" && styles.tabActive]}
+            onPress={() => setActiveTab("new")}
           >
-            Raise New
-          </Text>
-        </TouchableOpacity>
+            <Text
+              className="font-sn-pro-bold"
+              style={
+                activeTab === "new"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              Raise New
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading && !refreshing ? (
+          <ActivityIndicator
+            size="large"
+            color="#2563EB"
+            style={{ marginTop: 20 }}
+          />
+        ) : activeTab === "history" ? (
+          <ComplaintHistoryList
+            complaints={complaints}
+            loading={loading}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            onClose={handleClose}
+            onReject={openRejectModal}
+          />
+        ) : (
+          <ComplaintForm
+            categories={categories}
+            roomId={user?.roomId}
+            onSubmitSuccess={() => {
+              setActiveTab("history");
+              fetchData();
+            }}
+          />
+        )}
       </View>
-
-      {loading && !refreshing ? (
-        <ActivityIndicator
-          size="large"
-          color="#2563EB"
-          style={{ marginTop: 20 }}
-        />
-      ) : activeTab === "history" ? (
-        <ComplaintHistoryList
-          complaints={complaints}
-          loading={loading}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          onClose={handleClose}
-          onReject={openRejectModal}
-        />
-      ) : (
-        <ComplaintForm
-          categories={categories}
-          roomId={user?.roomId}
-          onSubmitSuccess={() => {
-            setActiveTab("history");
-            fetchData();
-          }}
-        />
-      )}
 
       <RejectResolutionModal
         visible={rejectModalVisible}
@@ -172,14 +188,28 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F9FAFB",
-    paddingHorizontal: 20,
-    paddingTop: 10,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-    marginBottom: 20,
+    color: "#FFFFFF",
+  },
+  headerSub: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 4,
+  },
+  inner: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   tabContainer: {
     flexDirection: "row",

@@ -115,6 +115,12 @@ export default function ResidentLayout() {
         }}
       />
       <Tabs.Screen
+        name="Marketplace"
+        options={{
+          href: null, // <--- Hides this tab
+        }}
+      />
+      <Tabs.Screen
         name="payments"
         options={{
           href: null, // <--- Hides this tab

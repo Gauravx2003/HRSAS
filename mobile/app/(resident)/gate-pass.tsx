@@ -23,6 +23,7 @@ import {
   GatePassRequest,
 } from "../../src/services/gatePass.service";
 import { useFocusEffect } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function GatePassScreen() {
   const [activeTab, setActiveTab] = useState<"request" | "history">("request");
@@ -304,275 +305,295 @@ export default function GatePassScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Gate Pass</Text>
+      <LinearGradient
+        colors={["#1E1B4B", "#312E81"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <Text className="font-sn-pro-bold" style={styles.headerTitle}>
+          Gate Pass
+        </Text>
+        <Text style={styles.headerSub}>Request and track your gate passes</Text>
+      </LinearGradient>
 
-      {/* 1. ACTIVE PASS CARD (Priority 1 & 2) */}
-      {activePass && (
-        <View style={styles.activeCard}>
-          <View style={styles.cardHeader}>
-            <View style={styles.liveBadge}>
-              <View style={styles.pulseDot} />
-              <Text style={styles.liveText}>
-                {activePass.status === "ACTIVE"
-                  ? "ACTIVE NOW"
-                  : "READY FOR EXIT"}
-              </Text>
-            </View>
-            <Text style={styles.expiryText}>
-              Valid until{" "}
-              {new Date(activePass.inTime).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </Text>
-          </View>
-
-          <Text style={styles.passType}>
-            {activePass.type === "ENTRY"
-              ? "Late Entry"
-              : activePass.type === "EXIT"
-                ? "Late Exit"
-                : "Overnight Stay"}
-          </Text>
-          <Text style={styles.passDetail}>
-            {activePass.location} • {activePass.reason}
-          </Text>
-
-          {activePass.qrToken && (
-            <TouchableOpacity
-              style={styles.showQrBtn}
-              onPress={() => setShowQR(true)}
-            >
-              <Feather
-                name="maximize"
-                size={20}
-                color="#2563EB"
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.showQrText}>Show Gate QR</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* UPCOMING PASSES (Priority 3) */}
-      {upcomingPasses.length > 0 && (
-        <View style={styles.upcomingContainer}>
-          <Text style={styles.sectionTitle}>Upcoming Passes</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {upcomingPasses.map((pass) => (
-              <View key={pass.id} style={styles.upcomingCard}>
-                <View style={styles.upcomingHeader}>
-                  <Text style={styles.upcomingType}>
-                    {pass.type === "ENTRY"
-                      ? "Entry"
-                      : pass.type === "EXIT"
-                        ? "Exit"
-                        : "Overnight"}
-                  </Text>
-                  <Text style={styles.upcomingTime}>
-                    {new Date(pass.outTime).toLocaleDateString([], {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </Text>
-                </View>
-                <Text style={styles.upcomingLocation} numberOfLines={1}>
-                  {pass.location}
+      <View style={styles.inner}>
+        {/* 1. ACTIVE PASS CARD (Priority 1 & 2) */}
+        {activePass && (
+          <View style={styles.activeCard}>
+            <View style={styles.cardHeader}>
+              <View style={styles.liveBadge}>
+                <View style={styles.pulseDot} />
+                <Text style={styles.liveText}>
+                  {activePass.status === "ACTIVE"
+                    ? "ACTIVE NOW"
+                    : "READY FOR EXIT"}
                 </Text>
-                <Text style={styles.upcomingStatus}>APPROVED</Text>
               </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* 2. TABS */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "request" && styles.tabActive]}
-          onPress={() => setActiveTab("request")}
-        >
-          <Text
-            style={
-              activeTab === "request"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
-          >
-            New Request
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "history" && styles.tabActive]}
-          onPress={() => setActiveTab("history")}
-        >
-          <Text
-            style={
-              activeTab === "history"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
-          >
-            History
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* CONTENT AREA */}
-      {activeTab === "request" ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.formCard}>
-            {/* REQUEST TYPE SELECTOR */}
-            <Text style={styles.label}>Request Type</Text>
-            <View style={styles.typeContainer}>
-              {(["ENTRY", "EXIT", "OVERNIGHT"] as const).map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.typeChip,
-                    requestType === type && styles.typeChipActive,
-                  ]}
-                  onPress={() => setRequestType(type)}
-                >
-                  <Text
-                    style={
-                      requestType === type
-                        ? styles.typeTextActive
-                        : styles.typeTextInactive
-                    }
-                  >
-                    {type === "ENTRY"
-                      ? "Late Entry"
-                      : type === "EXIT"
-                        ? "Late Exit"
-                        : "Overnight"}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Where are you going?</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Market / Home / Library"
-              value={location}
-              onChangeText={setLocation}
-            />
-
-            <Text style={styles.label}>Reason</Text>
-            <TextInput
-              style={[styles.input, { height: 80, textAlignVertical: "top" }]}
-              placeholder="e.g. Buying study material"
-              multiline
-              value={reason}
-              onChangeText={setReason}
-            />
-
-            {/* CONDITIONAL DATE/TIME PICKERS */}
-            <View style={styles.dateSection}>
-              {/* EXIT TIME (Visible for EXIT & OVERNIGHT) */}
-              {(requestType === "EXIT" || requestType === "OVERNIGHT") && (
-                <View style={styles.dateTimeRow}>
-                  <Text style={styles.label}>
-                    {requestType === "OVERNIGHT" ? "Leaving At" : "Exit Time"}
-                  </Text>
-                  <View style={styles.pickerRow}>
-                    <TouchableOpacity
-                      onPress={() => showOutDatepicker("date")}
-                      style={[styles.timeBox, { flex: 1, marginRight: 8 }]}
-                    >
-                      <Feather name="calendar" size={16} color="#64748B" />
-                      <Text style={styles.timeText}>{formatDate(outDate)}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => showOutDatepicker("time")}
-                      style={[styles.timeBox, { flex: 1 }]}
-                    >
-                      <Feather name="clock" size={16} color="#64748B" />
-                      <Text style={styles.timeText}>{formatTime(outDate)}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {showOutPicker && (
-                    <DateTimePicker
-                      value={outDate}
-                      mode={pickerMode}
-                      is24Hour={false}
-                      display="default"
-                      onChange={onChangeOut}
-                    />
-                  )}
-                </View>
-              )}
-
-              {/* ENTRY TIME (Visible for ENTRY & OVERNIGHT) */}
-              {(requestType === "ENTRY" || requestType === "OVERNIGHT") && (
-                <View style={styles.dateTimeRow}>
-                  <Text style={styles.label}>
-                    {requestType === "OVERNIGHT" ? "Return At" : "Entry Time"}
-                  </Text>
-                  <View style={styles.pickerRow}>
-                    <TouchableOpacity
-                      onPress={() => showInDatepicker("date")}
-                      style={[styles.timeBox, { flex: 1, marginRight: 8 }]}
-                    >
-                      <Feather name="calendar" size={16} color="#64748B" />
-                      <Text style={styles.timeText}>{formatDate(inDate)}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => showInDatepicker("time")}
-                      style={[styles.timeBox, { flex: 1 }]}
-                    >
-                      <Feather name="clock" size={16} color="#64748B" />
-                      <Text style={styles.timeText}>{formatTime(inDate)}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {showInPicker && (
-                    <DateTimePicker
-                      value={inDate}
-                      mode={pickerMode}
-                      is24Hour={false}
-                      display="default"
-                      onChange={onChangeIn}
-                    />
-                  )}
-                </View>
-              )}
-            </View>
-
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleRequest}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.submitText}>Request Permission</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      ) : (
-        /* HISTORY LIST */
-        <FlatList
-          data={history}
-          keyExtractor={(item) => item.id}
-          renderItem={renderHistoryItem}
-          contentContainerStyle={{ paddingBottom: 40 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ListEmptyComponent={
-            <View style={{ alignItems: "center", marginTop: 50 }}>
-              <Feather name="list" size={40} color="#CBD5E1" />
-              <Text style={{ color: "#94A3B8", marginTop: 10 }}>
-                No past requests
+              <Text style={styles.expiryText}>
+                Valid until{" "}
+                {new Date(activePass.inTime).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
             </View>
-          }
-        />
-      )}
+
+            <Text style={styles.passType}>
+              {activePass.type === "ENTRY"
+                ? "Late Entry"
+                : activePass.type === "EXIT"
+                  ? "Late Exit"
+                  : "Overnight Stay"}
+            </Text>
+            <Text style={styles.passDetail}>
+              {activePass.location} • {activePass.reason}
+            </Text>
+
+            {activePass.qrToken && (
+              <TouchableOpacity
+                style={styles.showQrBtn}
+                onPress={() => setShowQR(true)}
+              >
+                <Feather
+                  name="maximize"
+                  size={20}
+                  color="#2563EB"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.showQrText}>Show Gate QR</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* UPCOMING PASSES (Priority 3) */}
+        {upcomingPasses.length > 0 && (
+          <View style={styles.upcomingContainer}>
+            <Text style={styles.sectionTitle}>Upcoming Passes</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {upcomingPasses.map((pass) => (
+                <View key={pass.id} style={styles.upcomingCard}>
+                  <View style={styles.upcomingHeader}>
+                    <Text style={styles.upcomingType}>
+                      {pass.type === "ENTRY"
+                        ? "Entry"
+                        : pass.type === "EXIT"
+                          ? "Exit"
+                          : "Overnight"}
+                    </Text>
+                    <Text style={styles.upcomingTime}>
+                      {new Date(pass.outTime).toLocaleDateString([], {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                  <Text style={styles.upcomingLocation} numberOfLines={1}>
+                    {pass.location}
+                  </Text>
+                  <Text style={styles.upcomingStatus}>APPROVED</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* 2. TABS */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "request" && styles.tabActive]}
+            onPress={() => setActiveTab("request")}
+          >
+            <Text
+              style={
+                activeTab === "request"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              New Request
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "history" && styles.tabActive]}
+            onPress={() => setActiveTab("history")}
+          >
+            <Text
+              style={
+                activeTab === "history"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              History
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* CONTENT AREA */}
+        {activeTab === "request" ? (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              {/* REQUEST TYPE SELECTOR */}
+              <Text style={styles.label}>Request Type</Text>
+              <View style={styles.typeContainer}>
+                {(["ENTRY", "EXIT", "OVERNIGHT"] as const).map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.typeChip,
+                      requestType === type && styles.typeChipActive,
+                    ]}
+                    onPress={() => setRequestType(type)}
+                  >
+                    <Text
+                      style={
+                        requestType === type
+                          ? styles.typeTextActive
+                          : styles.typeTextInactive
+                      }
+                    >
+                      {type === "ENTRY"
+                        ? "Late Entry"
+                        : type === "EXIT"
+                          ? "Late Exit"
+                          : "Overnight"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Where are you going?</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Market / Home / Library"
+                value={location}
+                onChangeText={setLocation}
+              />
+
+              <Text style={styles.label}>Reason</Text>
+              <TextInput
+                style={[styles.input, { height: 80, textAlignVertical: "top" }]}
+                placeholder="e.g. Buying study material"
+                multiline
+                value={reason}
+                onChangeText={setReason}
+              />
+
+              {/* CONDITIONAL DATE/TIME PICKERS */}
+              <View style={styles.dateSection}>
+                {/* EXIT TIME (Visible for EXIT & OVERNIGHT) */}
+                {(requestType === "EXIT" || requestType === "OVERNIGHT") && (
+                  <View style={styles.dateTimeRow}>
+                    <Text style={styles.label}>
+                      {requestType === "OVERNIGHT" ? "Leaving At" : "Exit Time"}
+                    </Text>
+                    <View style={styles.pickerRow}>
+                      <TouchableOpacity
+                        onPress={() => showOutDatepicker("date")}
+                        style={[styles.timeBox, { flex: 1, marginRight: 8 }]}
+                      >
+                        <Feather name="calendar" size={16} color="#64748B" />
+                        <Text style={styles.timeText}>
+                          {formatDate(outDate)}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => showOutDatepicker("time")}
+                        style={[styles.timeBox, { flex: 1 }]}
+                      >
+                        <Feather name="clock" size={16} color="#64748B" />
+                        <Text style={styles.timeText}>
+                          {formatTime(outDate)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    {showOutPicker && (
+                      <DateTimePicker
+                        value={outDate}
+                        mode={pickerMode}
+                        is24Hour={false}
+                        display="default"
+                        onChange={onChangeOut}
+                      />
+                    )}
+                  </View>
+                )}
+
+                {/* ENTRY TIME (Visible for ENTRY & OVERNIGHT) */}
+                {(requestType === "ENTRY" || requestType === "OVERNIGHT") && (
+                  <View style={styles.dateTimeRow}>
+                    <Text style={styles.label}>
+                      {requestType === "OVERNIGHT" ? "Return At" : "Entry Time"}
+                    </Text>
+                    <View style={styles.pickerRow}>
+                      <TouchableOpacity
+                        onPress={() => showInDatepicker("date")}
+                        style={[styles.timeBox, { flex: 1, marginRight: 8 }]}
+                      >
+                        <Feather name="calendar" size={16} color="#64748B" />
+                        <Text style={styles.timeText}>
+                          {formatDate(inDate)}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => showInDatepicker("time")}
+                        style={[styles.timeBox, { flex: 1 }]}
+                      >
+                        <Feather name="clock" size={16} color="#64748B" />
+                        <Text style={styles.timeText}>
+                          {formatTime(inDate)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    {showInPicker && (
+                      <DateTimePicker
+                        value={inDate}
+                        mode={pickerMode}
+                        is24Hour={false}
+                        display="default"
+                        onChange={onChangeIn}
+                      />
+                    )}
+                  </View>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={styles.submitBtn}
+                onPress={handleRequest}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.submitText}>Request Permission</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        ) : (
+          /* HISTORY LIST */
+          <FlatList
+            data={history}
+            keyExtractor={(item) => item.id}
+            renderItem={renderHistoryItem}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+              <View style={{ alignItems: "center", marginTop: 50 }}>
+                <Feather name="list" size={40} color="#CBD5E1" />
+                <Text style={{ color: "#94A3B8", marginTop: 10 }}>
+                  No past requests
+                </Text>
+              </View>
+            }
+          />
+        )}
+      </View>
 
       {/* 3. QR MODAL */}
       <Modal visible={showQR} animationType="slide" transparent={true}>
@@ -626,15 +647,29 @@ export default function GatePassScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#F9FAFB",
+  },
+  inner: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 10,
   },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#0F172A",
-    marginBottom: 20,
+    fontSize: 24,
+    //fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  headerSub: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 4,
   },
 
   // Active Card

@@ -20,6 +20,7 @@ import {
   VisitorRequest,
 } from "../../src/services/visitors.service";
 import { useFocusEffect } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function VisitorScreen() {
   const [activeTab, setActiveTab] = useState<"new" | "history">("new");
@@ -182,187 +183,201 @@ export default function VisitorScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.headerTitle}>Visitors</Text>
+      <LinearGradient
+        colors={["#1E1B4B", "#312E81"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <Text style={styles.headerTitle}>Visitors</Text>
+        <Text style={styles.headerSub}>Manage your visitors</Text>
+      </LinearGradient>
 
       {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "new" && styles.tabActive]}
-          onPress={() => setActiveTab("new")}
-        >
-          <Text
-            style={
-              activeTab === "new"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
+      <View style={styles.inner}>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "new" && styles.tabActive]}
+            onPress={() => setActiveTab("new")}
           >
-            Invite Visitor
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "history" && styles.tabActive]}
-          onPress={() => setActiveTab("history")}
-        >
-          <Text
-            style={
-              activeTab === "history"
-                ? styles.tabTextActive
-                : styles.tabTextInactive
-            }
+            <Text
+              style={
+                activeTab === "new"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              Invite Visitor
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "history" && styles.tabActive]}
+            onPress={() => setActiveTab("history")}
           >
-            Logbook
-          </Text>
-        </TouchableOpacity>
-      </View>
+            <Text
+              style={
+                activeTab === "history"
+                  ? styles.tabTextActive
+                  : styles.tabTextInactive
+              }
+            >
+              Logbook
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      {activeTab === "new" ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.formCard}>
-            <View style={styles.infoBox}>
-              <Feather
-                name="info"
-                size={16}
-                color="#2563EB"
-                style={{ marginTop: 2 }}
-              />
-              <Text style={styles.infoText}>
-                Visitors are allowed only between 9 AM - 6 PM on weekends.
-                Parents can visit anytime with prior approval.
-              </Text>
-            </View>
-
-            <Text style={styles.label}>Visitor Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Ramesh Daware"
-              value={visitorName}
-              onChangeText={setVisitorName}
-            />
-
-            <Text style={styles.label}>Visitor Phone</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 9876543210"
-              value={visitorPhone}
-              onChangeText={setVisitorPhone}
-              keyboardType="phone-pad"
-              maxLength={10}
-            />
-
-            <Text style={styles.label}>Relationship</Text>
-            <View style={styles.chipContainer}>
-              {["Father", "Mother", "Sibling", "Friend", "Other"].map((rel) => (
-                <TouchableOpacity
-                  key={rel}
-                  onPress={() => setRelation(rel)}
-                  style={[
-                    styles.chip,
-                    relation === rel ? styles.chipActive : styles.chipInactive,
-                  ]}
-                >
-                  <Text
-                    style={
-                      relation === rel
-                        ? styles.chipTextActive
-                        : styles.chipTextInactive
-                    }
-                  >
-                    {rel}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={styles.container}>
-              <View style={styles.row}>
-                {/* DATE INPUT */}
-                <View style={{ flex: 1, marginRight: 10 }}>
-                  <Text style={styles.label}>Date</Text>
-                  <TouchableOpacity
-                    onPress={() => showMode("date")}
-                    style={styles.input}
-                  >
-                    <Text style={styles.inputText}>
-                      {formatDate(date) || "DD/MM/YYYY"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* TIME INPUT */}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Time</Text>
-                  <TouchableOpacity
-                    onPress={() => showMode("time")}
-                    style={styles.input}
-                  >
-                    <Text style={styles.inputText}>
-                      {formatTime(date) || "10:00 AM"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+        {activeTab === "new" ? (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.formCard}>
+              <View style={styles.infoBox}>
+                <Feather
+                  name="info"
+                  size={16}
+                  color="#2563EB"
+                  style={{ marginTop: 2 }}
+                />
+                <Text style={styles.infoText}>
+                  Visitors are allowed only between 9 AM - 6 PM on weekends.
+                  Parents can visit anytime with prior approval.
+                </Text>
               </View>
 
-              {/* THE PICKER COMPONENT */}
-              {show && (
-                <DateTimePicker
-                  testID="dateTimePicker"
-                  value={date || new Date()}
-                  mode={mode}
-                  is24Hour={false}
-                  onChange={onChange}
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                />
-              )}
-            </View>
+              <Text style={styles.label}>Visitor Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Ramesh Daware"
+                value={visitorName}
+                onChangeText={setVisitorName}
+              />
 
-            <Text style={styles.label}>Purpose of Visit</Text>
-            <TextInput
-              style={[styles.input, { height: 80, textAlignVertical: "top" }]}
-              placeholder="e.g. Dropping off luggage"
-              multiline
-              value={purpose}
-              onChangeText={setPurpose}
-            />
+              <Text style={styles.label}>Visitor Phone</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 9876543210"
+                value={visitorPhone}
+                onChangeText={setVisitorPhone}
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
 
-            <TouchableOpacity
-              style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.submitText}>Generate Pass</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      ) : (
-        <FlatList
-          data={history}
-          keyExtractor={(item) => item.id}
-          renderItem={renderHistoryItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ListEmptyComponent={
-            <View style={{ alignItems: "center", marginTop: 50 }}>
-              {loading ? (
-                <ActivityIndicator size="large" color="#2563EB" />
-              ) : (
-                <>
-                  <Feather name="users" size={40} color="#CBD5E1" />
-                  <Text style={{ color: "#94A3B8", marginTop: 10 }}>
-                    No past visitors
-                  </Text>
-                </>
-              )}
+              <Text style={styles.label}>Relationship</Text>
+              <View style={styles.chipContainer}>
+                {["Father", "Mother", "Sibling", "Friend", "Other"].map(
+                  (rel) => (
+                    <TouchableOpacity
+                      key={rel}
+                      onPress={() => setRelation(rel)}
+                      style={[
+                        styles.chip,
+                        relation === rel
+                          ? styles.chipActive
+                          : styles.chipInactive,
+                      ]}
+                    >
+                      <Text
+                        style={
+                          relation === rel
+                            ? styles.chipTextActive
+                            : styles.chipTextInactive
+                        }
+                      >
+                        {rel}
+                      </Text>
+                    </TouchableOpacity>
+                  ),
+                )}
+              </View>
+
+              <View style={styles.container}>
+                <View style={styles.row}>
+                  {/* DATE INPUT */}
+                  <View style={{ flex: 1, marginRight: 10 }}>
+                    <Text style={styles.label}>Date</Text>
+                    <TouchableOpacity
+                      onPress={() => showMode("date")}
+                      style={styles.input}
+                    >
+                      <Text style={styles.inputText}>
+                        {formatDate(date) || "DD/MM/YYYY"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* TIME INPUT */}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Time</Text>
+                    <TouchableOpacity
+                      onPress={() => showMode("time")}
+                      style={styles.input}
+                    >
+                      <Text style={styles.inputText}>
+                        {formatTime(date) || "10:00 AM"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* THE PICKER COMPONENT */}
+                {show && (
+                  <DateTimePicker
+                    testID="dateTimePicker"
+                    value={date || new Date()}
+                    mode={mode}
+                    is24Hour={false}
+                    onChange={onChange}
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                  />
+                )}
+              </View>
+
+              <Text style={styles.label}>Purpose of Visit</Text>
+              <TextInput
+                style={[styles.input, { height: 80, textAlignVertical: "top" }]}
+                placeholder="e.g. Dropping off luggage"
+                multiline
+                value={purpose}
+                onChangeText={setPurpose}
+              />
+
+              <TouchableOpacity
+                style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text style={styles.submitText}>Generate Pass</Text>
+                )}
+              </TouchableOpacity>
             </View>
-          }
-        />
-      )}
+          </ScrollView>
+        ) : (
+          <FlatList
+            data={history}
+            keyExtractor={(item) => item.id}
+            renderItem={renderHistoryItem}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+              <View style={{ alignItems: "center", marginTop: 50 }}>
+                {loading ? (
+                  <ActivityIndicator size="large" color="#2563EB" />
+                ) : (
+                  <>
+                    <Feather name="users" size={40} color="#CBD5E1" />
+                    <Text style={{ color: "#94A3B8", marginTop: 10 }}>
+                      No past visitors
+                    </Text>
+                  </>
+                )}
+              </View>
+            }
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -379,14 +394,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    paddingHorizontal: 20,
-    paddingTop: 10,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    marginBottom: 16,
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#0F172A",
-    marginBottom: 20,
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  headerSub: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 4,
+  },
+  inner: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
 
   // Tabs
