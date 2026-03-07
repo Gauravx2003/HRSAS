@@ -38,6 +38,8 @@ const Login = () => {
         navigate("/resident");
       } else if (user.role === "STAFF") {
         navigate("/staff");
+      } else if (user.role === "LIBRARIAN") {
+        navigate("/librarian");
       }
     } catch (err) {
       setError("Invalid email or password. Please try again.");

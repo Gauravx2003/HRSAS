@@ -26,6 +26,11 @@ import VisitorsApproval from "./pages/admin/visitorsApproval";
 import MessIssueManagement from "./pages/admin/messIssue";
 import Infrastructure from "./pages/admin/Infrastructure";
 import LaundryManagement from "./pages/admin/LaundryManagement";
+import LibrarianLayout from "./layout/LibrarianLayout";
+import LibrarianDashboard from "./pages/librarian/LibrarianDashboard";
+import IssueDesk from "./pages/librarian/IssueDesk";
+import ReturnDesk from "./pages/librarian/ReturnDesk";
+import Inventory from "./pages/librarian/Inventory";
 
 const App = () => {
   return (
@@ -70,6 +75,23 @@ const App = () => {
           <Route index element={<StaffDashboard />} />
           <Route path="notices" element={<NoticeList />} />
           <Route path="complaints" element={<AssignedComplaints />} />
+        </Route>
+
+        {/* LIBRARIAN */}
+        <Route
+          path="/librarian"
+          element={
+            <ProtectedRoute>
+              <RoleRoute allowedRoles={["LIBRARIAN"]}>
+                <LibrarianLayout />
+              </RoleRoute>
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<LibrarianDashboard />} />
+          <Route path="issue-desk" element={<IssueDesk />} />
+          <Route path="return-desk" element={<ReturnDesk />} />
+          <Route path="inventory" element={<Inventory />} />
         </Route>
 
         {/* RESIDENT */}

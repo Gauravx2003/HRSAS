@@ -105,16 +105,15 @@ export const startLibraryCron = () => {
             .set({ status: "EXPIRED" })
             .where(eq(bookReservations.id, res.id));
 
-          // B. Put the book back on the shelf (increment copies)
-          await tx
-            .update(libraryBooks)
-            .set({ availableCopies: sql`${libraryBooks.availableCopies} + 1` })
-            .where(eq(libraryBooks.id, res.bookId));
+          // B. Put the book back on the shelf
+          // TODO: With the new `bookCopies` schema, `bookReservations` needs to be updated
+          // to either reserve a specific `copyId` or we simply don't need to do anything here
+          // since available copies is calculated dynamically from `bookCopies` and `libraryTransactions`.
         });
       }
 
       console.log(
-        `✅ Successfully returned ${expiredReservations.length} books to the available pool.`,
+        `✅ Successfully expired ${expiredReservations.length} reservations.`,
       );
     } catch (error) {
       console.error("❌ Reservation Expiry Cron Failed:", error);

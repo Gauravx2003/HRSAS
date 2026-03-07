@@ -83,3 +83,8 @@ export const createBlockWithMixedRooms = async (data: {
   const res = await api.post("/infrastructure/block-with-mixed-rooms", data);
   return res.data;
 };
+
+export const getRoomsOfBlock = async (blockId: string) => {
+  const res = await api.get(`/infrastructure/blockRooms/${blockId}`);
+  return res.data;
+};

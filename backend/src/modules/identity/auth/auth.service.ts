@@ -37,7 +37,7 @@ export const loginUser = async (email: string, password: string) => {
     .leftJoin(blocks, eq(rooms.blockId, blocks.id))
     .where(eq(users.email, email));
 
-  if (!user || !user.isActive) {
+  if (!user) {
     throw new Error("Invalid Credentials");
   }
 

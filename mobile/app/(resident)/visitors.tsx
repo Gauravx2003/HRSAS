@@ -246,6 +246,7 @@ export default function VisitorScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g. Ramesh Daware"
+                placeholderTextColor="#9CA3AF"
                 value={visitorName}
                 onChangeText={setVisitorName}
               />
@@ -254,6 +255,7 @@ export default function VisitorScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 9876543210"
+                placeholderTextColor="#9CA3AF"
                 value={visitorPhone}
                 onChangeText={setVisitorPhone}
                 keyboardType="phone-pad"
@@ -334,6 +336,7 @@ export default function VisitorScreen() {
               <TextInput
                 style={[styles.input, { height: 80, textAlignVertical: "top" }]}
                 placeholder="e.g. Dropping off luggage"
+                placeholderTextColor="#9CA3AF"
                 multiline
                 value={purpose}
                 onChangeText={setPurpose}

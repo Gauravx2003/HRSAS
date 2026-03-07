@@ -10,6 +10,9 @@ import {
   getOccupancyStats,
   getRoomTypes,
 } from "./infrastructure.service";
+import { db } from "../../../db";
+import { rooms, roomTypes } from "../../../db/schema";
+import { eq } from "drizzle-orm";
 
 // 1. Create a Room Type (e.g., "VIP Suite")
 export const createRoomTypeController = async (
@@ -151,5 +154,25 @@ export const getRoomTypesController = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch room types" });
+  }
+};
+
+export const getRoomsOfBlockController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const { blockId } = req.params;
+
+    const room = await db
+      .select()
+      .from(rooms)
+      .leftJoin(roomTypes, eq(rooms.type, roomTypes.id))
+      .where(eq(rooms.blockId, blockId));
+
+    res.status(200).json(room);
+  } catch (error) {
+    console.error("Error getting block rooms:", error);
+    res.status(500).json({ error: "Failed to get block rooms" });
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,17 +6,20 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useIsFocused } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { useSelector, useDispatch } from "react-redux";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 // @ts-ignore
 import { RootState } from "../../src/store/store";
 import { logout } from "../../src/store/authSlice";
 import { api } from "../../src/services/api";
+import { getResidentStats } from "../../src/services/attendance.service";
 import { DashboardHeader } from "../../components/DashboardHeader";
 import {
   ProfileMenuModal,
@@ -31,11 +34,47 @@ export default function SecurityDashboard() {
   const userName = user?.name || "Security";
 
   const [menuVisible, setMenuVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // --- NEW CAMERA LOGIC ---
+  // --- Stats ---
+  const [stats, setStats] = useState({
+    totalResidents: 0,
+    insideCount: 0,
+    outsideCount: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // --- Camera ---
   const [permission, requestPermission] = useCameraPermissions();
   const isFocused = useIsFocused();
   const [isScanning, setIsScanning] = useState(false);
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await getResidentStats();
+      if (res.success) {
+        setStats(res.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch resident stats", e);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchStats();
+      const interval = setInterval(fetchStats, 10000); // refresh every 10s
+      return () => clearInterval(interval);
+    }, [fetchStats]),
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchStats();
+    setRefreshing(false);
+  }, [fetchStats]);
 
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to log out?", [
@@ -96,6 +135,8 @@ export default function SecurityDashboard() {
 
   const closeScanner = () => {
     setIsScanning(false);
+    // Refresh stats after a scan since a resident may have checked in/out
+    fetchStats();
   };
 
   // ─── PERMISSION SCREENS ───────────────────────────────────
@@ -113,10 +154,7 @@ export default function SecurityDashboard() {
     return (
       <View style={[styles.container, styles.center]}>
         <Text style={{ color: "#94A3B8" }}>No access to camera</Text>
-        <TouchableOpacity
-          onPress={requestPermission} // <-- Updated to use the hook's function
-          style={{ marginTop: 20 }}
-        >
+        <TouchableOpacity onPress={requestPermission} style={{ marginTop: 20 }}>
           <Text style={{ color: "#4ADE80" }}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
@@ -127,6 +165,10 @@ export default function SecurityDashboard() {
   if (isScanning) {
     return <UniversalScanner isFocused={isFocused} onClose={closeScanner} />;
   }
+
+  // ─── Helper: format time ───
+  const currentHour = new Date().getHours();
+  const isCurfewTime = currentHour >= 20 || currentHour < 6; // 8 PM to 6 AM
 
   // ─── 3. DASHBOARD (LANDING) ───────────────────────────────
   return (
@@ -139,30 +181,127 @@ export default function SecurityDashboard() {
         />
       </View>
 
-      {/* SHIFT BADGE */}
-      <View style={styles.shiftCard}>
-        <View style={styles.shiftLeft}>
-          <View style={styles.shiftDot} />
-          <Text style={styles.shiftText}>On Duty • Gate Control</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* SHIFT BADGE */}
+        <View style={styles.shiftCard}>
+          <View style={styles.shiftLeft}>
+            <View style={styles.shiftDot} />
+            <Text style={styles.shiftText}>On Duty • Gate Control</Text>
+          </View>
+          <View style={styles.shiftBadge}>
+            <Feather name="shield" size={14} color="#2563EB" />
+            <Text style={styles.shiftBadgeText}>SECURITY</Text>
+          </View>
         </View>
-        <View style={styles.shiftBadge}>
-          <Feather name="shield" size={14} color="#2563EB" />
-          <Text style={styles.shiftBadgeText}>SECURITY</Text>
-        </View>
-      </View>
 
-      {/* SCAN BUTTON */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.scanBtn} onPress={startScan}>
-          <View style={styles.iconCircle}>
-            <Feather name="maximize" size={26} color="#0F172A" />
+        {/* ── RESIDENT STATS ── */}
+        <View style={styles.statsSection}>
+          <Text style={styles.statsSectionTitle}>Hostel Occupancy</Text>
+          <Text style={styles.statsSectionSub}>
+            {stats.totalResidents} Total Residents
+          </Text>
+
+          <View style={styles.statsRow}>
+            {/* INSIDE CARD */}
+            <View style={[styles.statCard, styles.statCardInside]}>
+              <View style={styles.statIconCircle}>
+                <Feather name="home" size={20} color="#16A34A" />
+              </View>
+              {statsLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#16A34A"
+                  style={{ marginTop: 12 }}
+                />
+              ) : (
+                <Text style={[styles.statNumber, { color: "#16A34A" }]}>
+                  {stats.insideCount}
+                </Text>
+              )}
+              <Text style={styles.statLabel}>Inside</Text>
+            </View>
+
+            {/* OUTSIDE CARD — emphasized */}
+            <View
+              style={[
+                styles.statCard,
+                styles.statCardOutside,
+                isCurfewTime && stats.outsideCount > 0 && styles.statCardAlert,
+              ]}
+            >
+              <View
+                style={[
+                  styles.statIconCircle,
+                  { backgroundColor: "rgba(239,68,68,0.12)" },
+                ]}
+              >
+                <Feather name="log-out" size={20} color="#EF4444" />
+              </View>
+              {statsLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#EF4444"
+                  style={{ marginTop: 12 }}
+                />
+              ) : (
+                <Text style={[styles.statNumber, { color: "#EF4444" }]}>
+                  {stats.outsideCount}
+                </Text>
+              )}
+              <Text style={[styles.statLabel, { color: "#6B7280" }]}>
+                Outside
+              </Text>
+              {isCurfewTime && stats.outsideCount > 0 && (
+                <View style={styles.alertBadge}>
+                  <Feather name="alert-circle" size={10} color="#fff" />
+                  <Text style={styles.alertBadgeText}>CURFEW</Text>
+                </View>
+              )}
+            </View>
           </View>
-          <View>
-            <Text style={styles.scanBtnText}>Scan QR Code</Text>
-            <Text style={styles.scanBtnSub}>Tap to scan student gate pass</Text>
+        </View>
+
+        {/* VIEW RESIDENTS OUTSIDE BUTTON */}
+        <TouchableOpacity
+          style={styles.residentsBtn}
+          onPress={() => router.push("/(security)/residents-outside" as any)}
+          activeOpacity={0.85}
+        >
+          <View style={styles.residentsBtnLeft}>
+            <View style={styles.residentsBtnIcon}>
+              <Feather name="users" size={22} color="#7C3AED" />
+            </View>
+            <View>
+              <Text style={styles.residentsBtnText}>Residents Outside</Text>
+              <Text style={styles.residentsBtnSub}>
+                View list & contact info
+              </Text>
+            </View>
           </View>
+          <Feather name="chevron-right" size={22} color="#9CA3AF" />
         </TouchableOpacity>
-      </View>
+
+        {/* SCAN BUTTON */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity style={styles.scanBtn} onPress={startScan}>
+            <View style={styles.iconCircle}>
+              <Feather name="maximize" size={26} color="#0F172A" />
+            </View>
+            <View>
+              <Text style={styles.scanBtnText}>Scan QR Code</Text>
+              <Text style={styles.scanBtnSub}>
+                Tap to scan student gate pass
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
       {/* PROFILE MENU */}
       <ProfileMenuModal
@@ -180,9 +319,12 @@ export default function SecurityDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F172A",
+    backgroundColor: "#F9FAFB",
   },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  scrollContent: {
+    paddingBottom: 32,
+  },
 
   // Header
   header: {
@@ -193,43 +335,13 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  greetingText: {
-    fontSize: 14,
-    color: "#94A3B8",
-    fontWeight: "500",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    marginTop: 2,
-  },
-  avatarBtn: {
-    height: 44,
-    width: 44,
-    borderRadius: 22,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#2563EB",
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 5,
-  },
-  avatarText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
 
   // Shift Card
   shiftCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "white",
     marginHorizontal: 20,
     marginTop: 16,
     marginBottom: 8,
@@ -237,7 +349,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "#f3f4f6",
   },
   shiftLeft: {
     flexDirection: "row",
@@ -251,7 +363,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   shiftText: {
-    color: "#CBD5E1",
+    color: "#374151",
     fontWeight: "600",
     fontSize: 14,
   },
@@ -265,16 +377,143 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   shiftBadgeText: {
-    color: "#60A5FA",
+    color: "#2563EB",
     fontWeight: "800",
     fontSize: 11,
     letterSpacing: 0.5,
   },
 
+  // ── Stats Section ──
+  statsSection: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  statsSectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  statsSectionSub: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: 14,
+    marginTop: 14,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: "white",
+    borderRadius: 18,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  statCardInside: {
+    borderColor: "rgba(22,163,74,0.15)",
+  },
+  statCardOutside: {
+    borderColor: "rgba(239,68,68,0.15)",
+  },
+  statCardAlert: {
+    borderColor: "#EF4444",
+    borderWidth: 1.5,
+    backgroundColor: "#FEF2F2",
+  },
+  statIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(22,163,74,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statNumber: {
+    fontSize: 36,
+    fontWeight: "800",
+    marginTop: 10,
+  },
+  statLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  alertBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EF4444",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 8,
+    gap: 4,
+  },
+  alertBadgeText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+
+  // Residents Outside Button
+  residentsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "white",
+    marginHorizontal: 20,
+    marginTop: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    shadowColor: "#000",
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  residentsBtnLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  residentsBtnIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "rgba(124,58,237,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  residentsBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  residentsBtnSub: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    marginTop: 1,
+    fontWeight: "500",
+  },
+
   // Scan Button
   actionContainer: {
     paddingHorizontal: 20,
-    marginTop: 24,
+    marginTop: 18,
   },
   scanBtn: {
     backgroundColor: "#2563EB",
@@ -308,88 +547,5 @@ const styles = StyleSheet.create({
     color: "#BFDBFE",
     fontSize: 13,
     marginTop: 2,
-  },
-
-  // Scanner View
-
-  // ─── Profile Menu Modal ───
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 36,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 12,
-  },
-  modalAvatar: {
-    height: 52,
-    width: 52,
-    borderRadius: 26,
-    backgroundColor: "#2563EB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalAvatarText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 20,
-  },
-  modalUserName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  modalUserEmail: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#6B7280",
-    marginTop: 2,
-  },
-  modalDivider: {
-    height: 1,
-    backgroundColor: "#F3F4F6",
-    marginVertical: 8,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    gap: 14,
-  },
-  menuIconCircle: {
-    height: 40,
-    width: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  menuLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#1F2937",
-  },
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    gap: 14,
-  },
-  logoutText: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#DC2626",
   },
 });

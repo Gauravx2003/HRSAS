@@ -39,9 +39,7 @@ export interface LibraryService {
   getMyBooks: (
     status: "BORROWED" | "RETURNED" | "OVERDUE" | "ALL",
   ) => Promise<GetMyBooksResponse>;
-  borrowBook: (bookId: string) => Promise<any>;
   reserveBook: (bookId: string) => Promise<any>;
-  returnBook: (transactionId: string) => Promise<any>;
   downloadBook: (bookId: string) => Promise<{ downloadUrl: string }>;
 }
 
@@ -66,32 +64,12 @@ export const libraryService: LibraryService = {
     }
   },
 
-  borrowBook: async (bookId: string) => {
-    try {
-      const response = await api.post("/library/borrow", { bookId });
-      return response.data;
-    } catch (error) {
-      console.error("Error borrowing book:", error);
-      throw error;
-    }
-  },
-
   reserveBook: async (bookId: string) => {
     try {
       const response = await api.post("/library/reserve", { bookId });
       return response.data;
     } catch (error) {
       console.error("Error reserving book:", error);
-      throw error;
-    }
-  },
-
-  returnBook: async (transactionId: string) => {
-    try {
-      const response = await api.post("/library/return", { transactionId });
-      return response.data;
-    } catch (error) {
-      console.error("Error returning book:", error);
       throw error;
     }
   },

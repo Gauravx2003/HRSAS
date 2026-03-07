@@ -8,6 +8,7 @@ import {
   getBlocksOverviewController,
   getOccupancyStatsController,
   getRoomTypesController,
+  getRoomsOfBlockController,
 } from "./infrastructure.controller";
 
 const router = Router();
@@ -52,6 +53,13 @@ router.post(
   authenticate,
   authorize(["ADMIN"]),
   createBlockWithMixedRoomsController,
+);
+
+router.get(
+  "/blockRooms/:blockId",
+  authenticate,
+  authorize(["ADMIN"]),
+  getRoomsOfBlockController,
 );
 
 export default router;

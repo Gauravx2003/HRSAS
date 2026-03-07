@@ -7,13 +7,17 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
+import RazorpayCheckout from "react-native-razorpay";
 import {
   getMyPayments,
+  createRazorpayOrder,
+  verifyPayment,
   Payment,
   PaymentCategory,
 } from "../../src/services/payments.service";
@@ -83,6 +87,57 @@ export default function PaymentsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<"fines" | "payments">("fines");
+  let isProcessing = false;
+
+  // Track which payment is currently being processed to show a spinner on its button
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const handlePayment = async (item: Payment) => {
+    try {
+      setProcessingId(item.id);
+      const orderData = await createRazorpayOrder(item.id, item.amount);
+
+      //Configure Razorpay Options
+      const options = {
+        description:
+          item.description ||
+          `Payment for ${CATEGORY_CONFIG[item.category].label}`,
+        currency: "INR",
+        amount: orderData.amount,
+        name: "Habitat",
+        order_id: orderData.orderId,
+        theme: { color: "#2563EB" },
+        key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID,
+      };
+
+      // paymentId, razorpayPaymentId, razorpayOrderId, razorpaySignature
+
+      RazorpayCheckout.open(options as any).then(async (data: any) => {
+        try {
+          await verifyPayment({
+            paymentId: item.id,
+            razorpayPaymentId: data.razorpay_payment_id,
+            razorpayOrderId: data.razorpay_order_id,
+            razorpaySignature: data.razorpay_signature,
+          });
+          Alert.alert("Success", "Payment verified successfully");
+          fetchPayments();
+        } catch (error: any) {
+          console.error(
+            "Payment verification failed:",
+            error.response?.data?.message,
+          );
+          Alert.alert("Error", "Payment verification failed");
+        } finally {
+          setProcessingId(null);
+        }
+      });
+    } catch (e) {
+      console.error("Payment failed:", e);
+      Alert.alert("Error", "Payment failed");
+      setProcessingId(null);
+    }
+  };
 
   const fetchPayments = useCallback(async () => {
     try {
@@ -110,6 +165,8 @@ export default function PaymentsScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
+    isProcessing = false;
+    setProcessingId(null);
     fetchPayments();
   };
 
@@ -143,6 +200,7 @@ export default function PaymentsScreen() {
     const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.PENDING;
     const isFine = FINE_CATEGORIES.includes(item.category);
     const isPending = item.status === "PENDING";
+    isProcessing = processingId === item.id;
 
     return (
       <View style={styles.card}>
@@ -181,17 +239,22 @@ export default function PaymentsScreen() {
           <TouchableOpacity
             style={styles.payButton}
             activeOpacity={0.7}
-            onPress={() => {
-              // Static — no action
-            }}
+            onPress={() => handlePayment(item)}
+            disabled={isProcessing}
           >
-            <Feather
-              name="credit-card"
-              size={16}
-              color="#FFF"
-              style={{ marginRight: 6 }}
-            />
-            <Text style={styles.payButtonText}>Pay Now</Text>
+            {isProcessing ? (
+              <ActivityIndicator color="#FFF" />
+            ) : (
+              <Feather
+                name="credit-card"
+                size={16}
+                color="#FFF"
+                style={{ marginRight: 6 }}
+              />
+            )}
+            <Text style={styles.payButtonText}>
+              {isProcessing ? "Processing..." : "Pay Now"}
+            </Text>
           </TouchableOpacity>
         )}
       </View>

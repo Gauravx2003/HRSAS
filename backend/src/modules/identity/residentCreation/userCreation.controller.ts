@@ -12,6 +12,10 @@ import {
 import { eq, lt, and } from "drizzle-orm";
 import { db } from "../../../db";
 import { sendWelcomeEmail } from "../../../services/email.service";
+import {
+  createResidentSchema,
+  createStaffSchema,
+} from "../../../middleware/validation/userCreation.validate";
 
 export const createResidentController = async (
   req: Authenticate,
@@ -19,6 +23,18 @@ export const createResidentController = async (
 ) => {
   try {
     const { adminUser, residentData } = req.body;
+    const validationResult = createResidentSchema.safeParse(residentData);
+
+    // 2. Check if validation failed
+    if (!validationResult.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        // .flatten().fieldErrors transforms Zod's complex error object
+        // into a clean { fieldName: ["Error message"] } format
+        errors: validationResult.error.flatten().fieldErrors,
+      });
+    }
+
     const resident = await createResident(adminUser, residentData);
     sendWelcomeEmail(
       residentData.email,
@@ -31,6 +47,11 @@ export const createResidentController = async (
     console.error("Error creating resident:", error);
     if (error.message.includes("User with email already exists")) {
       return res.status(400).json({ error: "User with email already exists" });
+    }
+    if (error.message.includes("User with phone number already exists")) {
+      return res
+        .status(400)
+        .json({ error: "User with phone number already exists" });
     }
     res.status(500).json({ error: "Failed to create resident" });
   }
@@ -115,6 +136,17 @@ export const createStaffController = async (
 ) => {
   try {
     const { adminUser, staffData } = req.body;
+    const validationResult = createStaffSchema.safeParse(staffData);
+
+    // 2. Check if validation failed
+    if (!validationResult.success) {
+      return res.status(400).json({
+        message: "Validation failed",
+        // .flatten().fieldErrors transforms Zod's complex error object
+        // into a clean { fieldName: ["Error message"] } format
+        errors: validationResult.error.flatten().fieldErrors,
+      });
+    }
 
     if (
       staffData.staffType !== "IN_HOUSE" &&

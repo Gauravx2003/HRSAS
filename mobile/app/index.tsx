@@ -88,6 +88,7 @@ export default function LoginScreen() {
           <Feather name="mail" size={20} color="#6B7280" />
           <TextInput
             placeholder="Email Address"
+            placeholderTextColor="#9CA3AF"
             className="flex-1 ml-3 text-gray-800 text-base"
             value={email}
             onChangeText={setEmail}
@@ -101,6 +102,7 @@ export default function LoginScreen() {
           <Feather name="lock" size={20} color="#6B7280" />
           <TextInput
             placeholder="Password"
+            placeholderTextColor="#9CA3AF"
             className="flex-1 ml-3 text-gray-800 text-base"
             value={password}
             onChangeText={setPassword}

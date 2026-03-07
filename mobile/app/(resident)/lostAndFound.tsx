@@ -393,6 +393,7 @@ export default function LostAndFoundScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. Blue Wallet, AirPods"
+                    placeholderTextColor="#9CA3AF"
                     value={title}
                     onChangeText={setTitle}
                   />
@@ -424,6 +425,7 @@ export default function LostAndFoundScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. Library, Canteen"
+                    placeholderTextColor="#9CA3AF"
                     value={location}
                     onChangeText={setLocation}
                   />
@@ -456,6 +458,7 @@ export default function LostAndFoundScreen() {
                       { height: 100, textAlignVertical: "top" },
                     ]}
                     placeholder="Describe the item..."
+                    placeholderTextColor="#9CA3AF"
                     multiline
                     value={description}
                     onChangeText={setDescription}
@@ -597,7 +600,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   input: {
-    backgroundColor: "white",
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,

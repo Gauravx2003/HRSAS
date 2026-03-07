@@ -1,8 +1,14 @@
 import redis from "../../../config/redis";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "../../../db";
-import { attendanceLogs, users } from "../../../db/schema";
-import { eq } from "drizzle-orm";
+import {
+  attendanceLogs,
+  users,
+  residentProfiles,
+  rooms,
+  blocks,
+} from "../../../db/schema";
+import { eq, and, sql, desc } from "drizzle-orm";
 
 export const generateQR = async () => {
   const token = uuidv4();
@@ -53,4 +59,66 @@ export const verifyQR = async (token: string, userId: string) => {
 
     return { message: `Successfully marked as ${newDirection}` };
   });
+};
+
+export const getResidentStats = async () => {
+  const result = await db
+    .select({
+      isActive: users.isActive,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(users)
+    .where(eq(users.role, "RESIDENT"))
+    .groupBy(users.isActive);
+
+  let insideCount = 0;
+  let outsideCount = 0;
+
+  for (const row of result) {
+    if (row.isActive) {
+      insideCount = row.count;
+    } else {
+      outsideCount = row.count;
+    }
+  }
+
+  return {
+    totalResidents: insideCount + outsideCount,
+    insideCount,
+    outsideCount,
+  };
+};
+
+export const getResidentsOutside = async () => {
+  // Subquery: get the latest OUT scan time per user
+  const latestOut = db
+    .select({
+      userId: attendanceLogs.userId,
+      lastOutTime: sql<string>`max(${attendanceLogs.scanTime})`.as(
+        "last_out_time",
+      ),
+    })
+    .from(attendanceLogs)
+    .where(sql`${attendanceLogs.direction} = 'OUT'`)
+    .groupBy(attendanceLogs.userId)
+    .as("latest_out");
+
+  const residents = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      phone: users.phone,
+      email: users.email,
+      roomNumber: rooms.roomNumber,
+      blockName: blocks.name,
+      lastOutTime: latestOut.lastOutTime,
+    })
+    .from(users)
+    .leftJoin(residentProfiles, eq(residentProfiles.userId, users.id))
+    .leftJoin(rooms, eq(rooms.id, residentProfiles.roomId))
+    .leftJoin(blocks, eq(blocks.id, rooms.blockId))
+    .leftJoin(latestOut, eq(latestOut.userId, users.id))
+    .where(and(eq(users.role, "RESIDENT"), eq(users.isActive, false)));
+
+  return residents;
 };

@@ -227,10 +227,10 @@ const LateEntryExitApproval = () => {
                 <div className="flex items-center justify-between gap-6">
                   {/* Left: Resident Info */}
                   <div
-                    className="flex items-center gap-3 min-w-0 flex-shrink-0"
+                    className="flex items-center gap-3 min-w-0 shrink-0"
                     style={{ width: "200px" }}
                   >
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
                       <User className="w-5 h-5 text-indigo-600" />
                     </div>
                     <div className="min-w-0">
@@ -263,7 +263,7 @@ const LateEntryExitApproval = () => {
 
                     {/* Pass Type Badge */}
                     <div
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md ${passType.color} flex-shrink-0`}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md ${passType.color} shrink-0`}
                     >
                       {passType.icon}
                       <span className="text-xs font-medium italic">
@@ -273,7 +273,7 @@ const LateEntryExitApproval = () => {
                   </div>
 
                   {/* Right: Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     {request.status === "PENDING" ? (
                       <>
                         <button
@@ -305,7 +305,7 @@ const LateEntryExitApproval = () => {
                 {/* Reason - Below if needed */}
                 {request.reason && (
                   <div className="mt-3 pt-3 border-t border-slate-100 flex items-start gap-2">
-                    <FileText className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <FileText className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
                     <span className="text-xs text-slate-500">Reason:</span>
                     <span className="text-sm text-slate-700 flex-1">
                       {request.reason}

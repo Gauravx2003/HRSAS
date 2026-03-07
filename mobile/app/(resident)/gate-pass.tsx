@@ -468,6 +468,7 @@ export default function GatePassScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="e.g. Market / Home / Library"
+                placeholderTextColor="#9CA3AF"
                 value={location}
                 onChangeText={setLocation}
               />
@@ -476,6 +477,7 @@ export default function GatePassScreen() {
               <TextInput
                 style={[styles.input, { height: 80, textAlignVertical: "top" }]}
                 placeholder="e.g. Buying study material"
+                placeholderTextColor="#9CA3AF"
                 multiline
                 value={reason}
                 onChangeText={setReason}

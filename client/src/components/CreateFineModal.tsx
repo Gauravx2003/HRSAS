@@ -12,10 +12,10 @@ import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../store/slices/authSlice";
 import {
   getHostelBlocks,
-  getBlockRooms,
   getRoomResidents,
 } from "../services/userCreation.service";
 import { createFine } from "../services/fines.service";
+import { getRoomsOfBlock } from "../services/infrastructure.service";
 
 interface CreateFineModalProps {
   onClose: () => void;
@@ -121,7 +121,7 @@ const CreateFineModal = ({ onClose, onSuccess }: CreateFineModalProps) => {
   const fetchRooms = async (blockId: string) => {
     setIsLoadingRooms(true);
     try {
-      const data = await getBlockRooms(blockId);
+      const data = await getRoomsOfBlock(blockId);
       setRooms(data);
     } catch (error) {
       console.error("Failed to fetch rooms:", error);

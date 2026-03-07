@@ -33,7 +33,7 @@ interface PaymentCardProps {
   };
 }
 
-const PaymentCard = ({
+const  PaymentCard = ({
   payment,
   onPaymentSuccess,
   userDetails,

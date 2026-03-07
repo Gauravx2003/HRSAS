@@ -173,8 +173,6 @@ export const createRazorpayOrderController = async (
 
     const order = await razorpay.orders.create(options);
 
-    //console.log(order);
-
     res.status(200).json({
       orderId: order.id,
       amount: order.amount,
@@ -193,6 +191,8 @@ export const verifyPaymentController = async (
   try {
     const { paymentId, razorpayPaymentId, razorpayOrderId, razorpaySignature } =
       req.body;
+
+    console.log(req.body);
 
     if (
       !paymentId ||

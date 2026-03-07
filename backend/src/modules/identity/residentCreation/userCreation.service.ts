@@ -42,6 +42,16 @@ export const createResident = async (
     throw new Error("User with email already exists");
   }
 
+  //check if phone number already exists
+  const [phoneValidation] = await db
+    .select()
+    .from(users)
+    .where(eq(users.phone, residentData.phone));
+
+  if (phoneValidation) {
+    throw new Error("User with phone number already exists");
+  }
+
   //Check if room selected belongs to the same hostel as that of admin
   const [roomValidation] = await db
     .select({

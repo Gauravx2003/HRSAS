@@ -676,9 +676,7 @@ export default function LibraryScreen() {
                           Due in {daysLeft} days
                         </Text>
                       </View>
-                      <TouchableOpacity style={styles.renewBtn}>
-                        <Text style={styles.renewText}>Renew</Text>
-                      </TouchableOpacity>
+                      {/* Renew button disabled for new physical schema */}
                     </View>
                   );
                 })}
@@ -711,9 +709,7 @@ export default function LibraryScreen() {
                           <Text style={styles.fineText}>Fine: ₹{fine}</Text>
                         )}
                       </View>
-                      <TouchableOpacity style={styles.returnBtn}>
-                        <Text style={styles.returnText}>Return</Text>
-                      </TouchableOpacity>
+                      {/* Return button removed - must return at issue desk */}
                     </View>
                   );
                 })}

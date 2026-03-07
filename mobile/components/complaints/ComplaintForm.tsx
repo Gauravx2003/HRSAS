@@ -139,6 +139,7 @@ export function ComplaintForm({ categories, roomId, onSubmitSuccess }: Props) {
           <TextInput
             style={styles.input}
             placeholder="e.g. Fan not working"
+            placeholderTextColor="#9CA3AF"
             value={title}
             onChangeText={setTitle}
           />
@@ -149,6 +150,7 @@ export function ComplaintForm({ categories, roomId, onSubmitSuccess }: Props) {
           <TextInput
             style={[styles.input, { height: 100, textAlignVertical: "top" }]}
             placeholder="Describe details..."
+            placeholderTextColor="#9CA3AF"
             multiline
             value={desc}
             onChangeText={setDesc}

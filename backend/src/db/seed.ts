@@ -8,94 +8,65 @@ import {
   complaintStatusHistory,
   hostels,
   messMenu,
+  organizations,
   resources,
+  users,
 } from "./schema";
 import { v4 as uuidv4 } from "uuid";
-
+import bcrypt from "bcrypt";
 import { eq, sql } from "drizzle-orm";
 
 async function seed() {
   console.log("🌱 Seeding database...");
+
+  const rawPassword = "password123";
+  const passwordHash = await bcrypt.hash(rawPassword, 10);
+
+  const [organization] = await db
+    .select()
+    .from(organizations)
+    .where(eq(organizations.name, "Demo College"));
 
   const [hostel] = await db
     .select()
     .from(hostels)
     .where(eq(hostels.name, "Boys Hostel A"));
 
-  await db.insert(resources).values({
+  // id: uuid("id").defaultRandom().primaryKey(),
+  // organizationId: uuid("organization_id")
+  //   .references(() => organizations.id)
+  //   .notNull(),
+  // hostelId: uuid("hostel_id").references(() => hostels.id),
+
+  // name: varchar("name", { length: 100 }).notNull(),
+  // email: varchar("email", { length: 150 }).notNull().unique(),
+  // phone: varchar("phone", { length: 15 }).unique().notNull(),
+  // dateOfBirth: date("date_of_birth").notNull(),
+  // passwordHash: text("password_hash").notNull(),
+  // role: roleEnum("role").notNull(),
+  // isActive: boolean("is_active").default(true),
+  // pushToken: text("push_token"),
+  // createdAt: timestamp("created_at").defaultNow(),
+
+  await db.insert(users).values({
+    id: uuidv4(),
+    organizationId: organization.id,
     hostelId: hostel.id,
-    name: "Laundry 1",
-    type: "LAUNDRY",
+    name: "John Doe",
+    email: "librarian@hostel.com",
+    phone: "1299567890",
+    dateOfBirth: "2000-01-01",
+    passwordHash: passwordHash,
+    role: "LIBRARIAN",
+    isActive: true,
   });
 
-  await db.insert(resources).values({
-    hostelId: hostel.id,
-    name: "Laundry 2",
-    type: "LAUNDRY",
-  });
-
-  await db.insert(resources).values({
-    hostelId: hostel.id,
-    name: "Laundry 3",
-    type: "LAUNDRY",
-  });
-
-  await db.insert(resources).values({
-    hostelId: hostel.id,
-    name: "Laundry 4",
-    type: "LAUNDRY",
-  });
-
-  console.log("✅ Resources seeded");
+  console.log("✅ Librarian seeded ");
 
   process.exit(0);
 }
 
-const runDataMigration = async () => {
-  try {
-    console.log("🔄 Starting Data Transfer...");
-
-    // 1. Move Staff Data
-    await db.execute(sql`
-      UPDATE "users" u
-      SET phone = s.phone, date_of_birth = s.date_of_birth
-      FROM "staff_profiles" s
-      WHERE u.id = s.user_id;
-    `);
-    console.log("✅ Staff data moved.");
-
-    // 2. Move Resident Data
-    await db.execute(sql`
-      UPDATE "users" u
-      SET phone = r.phone, date_of_birth = r.date_of_birth
-      FROM "resident_profiles" r
-      WHERE u.id = r.user_id;
-    `);
-    console.log("✅ Resident data moved.");
-
-    // 3. Move Security Data
-    await db.execute(sql`
-      UPDATE "users" u
-      SET phone = sec.phone, date_of_birth = sec.date_of_birth
-      FROM "security_profiles" sec
-      WHERE u.id = sec.user_id;
-    `);
-    console.log("✅ Security data moved.");
-
-    console.log("🎉 All data successfully transferred to the users table!");
-    process.exit(0);
-  } catch (error) {
-    console.error("❌ Migration failed:", error);
-    process.exit(1);
-  }
-};
-
-runDataMigration().catch((err) => {
-  console.error("❌ Migration failed:", err);
+seed().catch((err) => {
+  console.error("❌ Seeding failed:", err);
   process.exit(1);
 });
-
-// seed().catch((err) => {
-//   console.error("❌ Seeding failed:", err);
-//   process.exit(1);
-// });

@@ -34,3 +34,26 @@ export const getMyPayments = async (): Promise<Payment[]> => {
   const response = await api.get("/payments/my-payments");
   return response.data;
 };
+
+// Add these to your existing payments.service.ts
+
+export const createRazorpayOrder = async (
+  paymentId: string,
+  amount: number,
+) => {
+  const response = await api.post("/payments/create-order", {
+    paymentId,
+    amount,
+  });
+  return response.data;
+};
+
+export const verifyPayment = async (data: {
+  paymentId: string;
+  razorpayPaymentId: string;
+  razorpayOrderId: string;
+  razorpaySignature: string;
+}) => {
+  const response = await api.post("/payments/verify", data);
+  return response.data;
+};

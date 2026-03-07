@@ -79,6 +79,14 @@ export default function ResidentLayout() {
           href: null,
         }}
       />
+
+      {/* RESIDENTS OUTSIDE (Hidden) */}
+      <Tabs.Screen
+        name="residents-outside"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
