@@ -34,6 +34,7 @@ export default function ResidentDashboard() {
   const user = useSelector((state: RootState) => state.auth.user);
   const userName = user?.name || "Student";
   const [menuVisible, setMenuVisible] = useState(false);
+  const [showAllQuickActions, setShowAllQuickActions] = useState(false);
 
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to log out?", [
@@ -195,6 +196,27 @@ export default function ResidentDashboard() {
   // Quick Action Buttons Data
   const actions = [
     {
+      label: "Attendance",
+      icon: "user-check",
+      route: "/(resident)/attendance",
+      color: "bg-indigo-100",
+      iconColor: "#4F46E5",
+    },
+    {
+      label: "Marketplace",
+      icon: "shopping-cart",
+      route: "/(resident)/Marketplace",
+      color: "bg-blue-100",
+      iconColor: "#328ad6ff",
+    },
+    {
+      label: "Payments",
+      icon: "credit-card",
+      route: "/(resident)/payments",
+      color: "bg-green-100",
+      iconColor: "#10B981",
+    },
+    {
       label: "Gate Pass",
       icon: "key",
       route: "/(resident)/gate-pass",
@@ -230,32 +252,11 @@ export default function ResidentDashboard() {
       iconColor: "#DC2626",
     },
     {
-      label: "Attendance",
-      icon: "user-check",
-      route: "/(resident)/attendance",
-      color: "bg-indigo-100",
-      iconColor: "#4F46E5",
-    },
-    {
-      label: "Payments",
-      icon: "credit-card",
-      route: "/(resident)/payments",
-      color: "bg-green-100",
-      iconColor: "#10B981",
-    },
-    {
       label: "Laundry",
       icon: "droplet",
       route: "/(resident)/laundry",
       color: "bg-blue-100",
       iconColor: "#0D9488",
-    },
-    {
-      label: "Marketplace",
-      icon: "shopping-cart",
-      route: "/(resident)/Marketplace",
-      color: "bg-blue-100",
-      iconColor: "#328ad6ff",
     },
   ];
 
@@ -494,28 +495,39 @@ export default function ResidentDashboard() {
         </View> */}
 
         {/* 4. Quick Actions Grid */}
-        <Text className="font-sn-pro-bold text-lg text-gray-900 mb-4">
-          Quick Actions
-        </Text>
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="font-sn-pro-bold text-lg text-gray-900">
+            Quick Actions
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowAllQuickActions(!showAllQuickActions)}
+          >
+            <Text className="font-sn-pro-medium text-blue-600 text-sm">
+              {showAllQuickActions ? "View Less" : "View All"}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View className="flex-row flex-wrap justify-between">
-          {actions.map((action, index) => (
-            <TouchableOpacity
-              key={index}
-              className="w-[31%] bg-white p-3 rounded-2xl mb-4 shadow-sm border border-gray-100 items-center justify-center space-y-2"
-              onPress={() => router.push(action.route as any)}
-            >
-              <View className={`p-3 rounded-full ${action.color} mb-2`}>
-                <Feather
-                  name={action.icon as any}
-                  size={22}
-                  color={action.iconColor}
-                />
-              </View>
-              <Text className="font-sn-pro-medium text-center text-xs text-gray-700">
-                {action.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {(showAllQuickActions ? actions : actions.slice(0, 3)).map(
+            (action, index) => (
+              <TouchableOpacity
+                key={index}
+                className="w-[31%] bg-white p-3 rounded-2xl mb-4 shadow-sm border border-gray-100 items-center justify-center space-y-2"
+                onPress={() => router.push(action.route as any)}
+              >
+                <View className={`p-3 rounded-full ${action.color} mb-2`}>
+                  <Feather
+                    name={action.icon as any}
+                    size={22}
+                    color={action.iconColor}
+                  />
+                </View>
+                <Text className="font-sn-pro-medium text-center text-xs text-gray-700">
+                  {action.label}
+                </Text>
+              </TouchableOpacity>
+            ),
+          )}
         </View>
       </ScrollView>
 
@@ -532,12 +544,12 @@ export default function ResidentDashboard() {
       />
 
       {/* 5. SOS Button (Floating) */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         className="absolute bottom-6 right-6 bg-red-600 h-16 w-16 rounded-full items-center justify-center shadow-lg border-4 border-white"
         onPress={() => alert("SOS Triggered! Location Sent.")}
       >
         <Feather name="alert-circle" size={30} color="white" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </SafeAreaView>
   );
 }

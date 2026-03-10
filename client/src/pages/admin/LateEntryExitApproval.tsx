@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "../../services/api";
 import {
   Clock,
@@ -9,9 +9,9 @@ import {
   LogIn,
   LogOut,
   Moon,
-  User,
-  Home,
-  ArrowRight,
+  Search,
+  ChevronDown,
+  MoreVertical,
 } from "lucide-react";
 
 interface LateEntryRequest {
@@ -29,33 +29,25 @@ interface LateEntryRequest {
 const LateEntryExitApproval = () => {
   const [requests, setRequests] = useState<LateEntryRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<
-    | "ALL"
-    | "PENDING"
-    | "APPROVED"
-    | "REJECTED"
-    | "ACTIVE"
-    | "CLOSED"
-    | "EXPIRED"
-  >("PENDING");
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("PENDING");
+  const [passTypeFilter, setPassTypeFilter] = useState("ALL");
 
   useEffect(() => {
     fetchRequests();
-  }, [filter]);
+  }, [statusFilter]);
 
   const fetchRequests = async () => {
     setIsLoading(true);
     try {
       let endpoint = "/gate-pass/all";
 
-      if (filter !== "ALL") {
-        endpoint += `?status=${filter}`;
+      if (statusFilter !== "ALL") {
+        endpoint += `?status=${statusFilter}`;
       }
 
       const response = await api.get(endpoint);
-      console.log(response.data);
-
-      // Filter on frontend if needed
       setRequests(response.data);
     } catch (error) {
       console.error("Failed to fetch requests:", error);
@@ -82,31 +74,48 @@ const LateEntryExitApproval = () => {
     }
   };
 
+  const filteredRequests = useMemo(() => {
+    return requests.filter((r) => {
+      const name = r.residentName || "";
+      const room = r.residentRoomNumber || "";
+
+      const matchesSearch =
+        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        room.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.id.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesPassType =
+        passTypeFilter === "ALL" ? true : r.type === passTypeFilter;
+
+      return matchesSearch && matchesPassType;
+    });
+  }, [requests, searchQuery, passTypeFilter]);
+
   const getPassTypeInfo = (type: string) => {
     switch (type) {
       case "ENTRY":
         return {
-          label: "Entry Pass",
+          label: "Entry",
           icon: <LogIn className="w-4 h-4" />,
-          color: "bg-blue-50 text-blue-700",
+          classes: "bg-blue-50 text-blue-700",
         };
       case "EXIT":
         return {
-          label: "Exit Pass",
+          label: "Exit",
           icon: <LogOut className="w-4 h-4" />,
-          color: "bg-purple-50 text-purple-700",
+          classes: "bg-purple-50 text-purple-700",
         };
       case "OVERNIGHT":
         return {
-          label: "Overnight Pass",
+          label: "Overnight",
           icon: <Moon className="w-4 h-4" />,
-          color: "bg-indigo-50 text-indigo-700",
+          classes: "bg-indigo-50 text-indigo-700",
         };
       default:
         return {
           label: type,
           icon: <FileText className="w-4 h-4" />,
-          color: "bg-slate-50 text-slate-700",
+          classes: "bg-slate-50 text-slate-700",
         };
     }
   };
@@ -116,207 +125,260 @@ const LateEntryExitApproval = () => {
       case "APPROVED":
         return {
           label: "Approved",
-          icon: <CheckCircle className="w-3 h-3" />,
-          color: "bg-green-100 text-green-700",
+          icon: <CheckCircle className="w-3.5 h-3.5" />,
+          classes: "bg-green-100 text-green-700",
         };
       case "REJECTED":
         return {
           label: "Rejected",
-          icon: <XCircle className="w-3 h-3" />,
-          color: "bg-red-100 text-red-700",
+          icon: <XCircle className="w-3.5 h-3.5" />,
+          classes: "bg-red-100 text-red-700",
         };
       case "PENDING":
         return {
           label: "Pending",
-          icon: <Clock className="w-3 h-3" />,
-          color: "bg-yellow-100 text-yellow-700",
+          icon: <Clock className="w-3.5 h-3.5" />,
+          classes: "bg-yellow-100 text-yellow-700",
         };
       default:
         return {
           label: status,
-          icon: <AlertCircle className="w-3 h-3" />,
-          color: "bg-slate-100 text-slate-700",
+          icon: <AlertCircle className="w-3.5 h-3.5" />,
+          classes: "bg-slate-100 text-slate-700",
         };
     }
   };
 
   const formatDateTime = (dateString: string) => {
+    if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      time: date.toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      }),
-    };
+    const datePart = date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+    const timePart = date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${datePart}, ${timePart}`;
+  };
+
+  const getTimeDisplay = (request: LateEntryRequest) => {
+    if (request.type === "ENTRY") {
+      return formatDateTime(request.inTime);
+    } else if (request.type === "EXIT") {
+      return formatDateTime(request.outTime);
+    } else {
+      return (
+        <div className="flex flex-col text-xs">
+          <span className="text-slate-500">
+            Out: {formatDateTime(request.outTime)}
+          </span>
+          <span className="text-slate-700 font-medium">
+            In: {formatDateTime(request.inTime)}
+          </span>
+        </div>
+      );
+    }
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-          Late Entry / Exit Approvals
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Review and manage gate pass requests
-        </p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setFilter("PENDING")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === "PENDING"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-          }`}
-        >
-          Pending
-        </button>
-        <button
-          onClick={() => setFilter("APPROVED")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === "APPROVED"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-          }`}
-        >
-          Approved
-        </button>
-        <button
-          onClick={() => setFilter("ALL")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === "ALL"
-              ? "bg-indigo-600 text-white"
-              : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-          }`}
-        >
-          All Requests
-        </button>
-      </div>
-
-      {/* Content */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-indigo-600"></div>
+    <div className="bg-[#f8f9fa] min-h-screen p-6 font-sans text-slate-900">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              Late Entry / Exit Approvals
+            </h1>
+            <p className="text-slate-500 mt-1">
+              Review and manage gate pass requests
+            </p>
+          </div>
         </div>
-      ) : requests.length === 0 ? (
-        <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
-          <FileText className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-          <p className="text-slate-600">No requests found</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {requests.map((request) => {
-            const passType = getPassTypeInfo(request.type);
-            const status = getStatusBadge(request.status);
-            const fromDateTime = formatDateTime(request.outTime);
-            const toDateTime = formatDateTime(request.inTime);
 
-            return (
-              <div
-                key={request.id}
-                className="bg-white rounded-lg border border-slate-200 p-4 hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-center justify-between gap-6">
-                  {/* Left: Resident Info */}
-                  <div
-                    className="flex items-center gap-3 min-w-0 shrink-0"
-                    style={{ width: "200px" }}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
-                      <User className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-slate-800 text-sm truncate">
-                        {request.residentName}
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-slate-500">
-                        <Home className="w-3 h-3" />
-                        <span>Room {request.residentRoomNumber}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Center: Time Range & Pass Type */}
-                  <div className="flex items-center gap-4 flex-1">
-                    {/* Time Range */}
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="text-slate-700">
-                        <div className="font-medium">
-                          {fromDateTime.date}, {fromDateTime.time}
-                        </div>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-slate-400" />
-                      <div className="text-slate-700">
-                        <div className="font-medium">
-                          {toDateTime.date}, {toDateTime.time}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Pass Type Badge */}
-                    <div
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md ${passType.color} shrink-0`}
-                    >
-                      {passType.icon}
-                      <span className="text-xs font-medium italic">
-                        "{passType.label}"
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Right: Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {request.status === "PENDING" ? (
-                      <>
-                        <button
-                          onClick={() => handleApprove(request.id)}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(request.id)}
-                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          Reject
-                        </button>
-                      </>
-                    ) : (
-                      <span
-                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${status.color}`}
-                      >
-                        {status.icon}
-                        {status.label}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Reason - Below if needed */}
-                {request.reason && (
-                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-start gap-2">
-                    <FileText className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
-                    <span className="text-xs text-slate-500">Reason:</span>
-                    <span className="text-sm text-slate-700 flex-1">
-                      {request.reason}
-                    </span>
-                  </div>
-                )}
+        {/* Data Table Section */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          {/* Filters Bar */}
+          <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input
+                type="text"
+                className="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow hover:bg-slate-50 focus:bg-white"
+                placeholder="Search by resident name or room..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-3 w-full md:w-auto">
+              <div className="relative w-full md:w-40">
+                <select
+                  className="w-full appearance-none px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-50 transition-colors bg-white font-medium text-slate-700 cursor-pointer"
+                  value={passTypeFilter}
+                  onChange={(e) => setPassTypeFilter(e.target.value)}
+                >
+                  <option value="ALL">All Passes</option>
+                  <option value="ENTRY">Entry</option>
+                  <option value="EXIT">Exit</option>
+                  <option value="OVERNIGHT">Overnight</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
               </div>
-            );
-          })}
+              <div className="relative w-full md:w-40">
+                <select
+                  className="w-full appearance-none px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-slate-50 transition-colors bg-white font-medium text-slate-700 cursor-pointer"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="APPROVED">Approved</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto min-h-75">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-blue-600"></div>
+              </div>
+            ) : filteredRequests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500 h-64">
+                <FileText className="w-12 h-12 text-slate-300 mb-3" />
+                <p>No requests found matching your criteria</p>
+              </div>
+            ) : (
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50/50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-4 uppercase text-xs tracking-wider">
+                      Resident Name
+                    </th>
+                    <th className="px-6 py-4 uppercase text-xs tracking-wider">
+                      Block & Room
+                    </th>
+                    <th className="px-6 py-4 uppercase text-xs tracking-wider">
+                      Pass
+                    </th>
+                    <th className="px-6 py-4 uppercase text-xs tracking-wider">
+                      Time
+                    </th>
+                    <th className="px-6 py-4 uppercase text-xs tracking-wider">
+                      Reason
+                    </th>
+                    <th className="px-6 py-4 uppercase text-xs tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 uppercase text-xs tracking-wider text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredRequests.map((request) => {
+                    const statusBadge = getStatusBadge(request.status);
+                    const initials = getInitials(request.residentName);
+                    const passType = getPassTypeInfo(request.type);
+
+                    return (
+                      <tr
+                        key={request.id}
+                        className="hover:bg-slate-50/50 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
+                              {initials}
+                            </div>
+                            <span className="font-semibold text-slate-900">
+                              {request.residentName || "Unknown"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          Room {request.residentRoomNumber}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${passType.classes}`}
+                          >
+                            {passType.icon}
+                            {passType.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">
+                          {getTimeDisplay(request)}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 max-w-50 truncate">
+                          {request.reason || "N/A"}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${statusBadge.classes}`}
+                          >
+                            {statusBadge.icon}
+                            {statusBadge.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {request.status === "PENDING" ? (
+                              <>
+                                <button
+                                  onClick={() => handleApprove(request.id)}
+                                  className="text-xs font-semibold text-white bg-green-600 hover:bg-green-700 transition-colors px-3 py-1.5 rounded-md flex items-center gap-1"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(request.id)}
+                                  className="text-xs font-semibold text-white bg-slate-700 hover:bg-slate-800 transition-colors px-3 py-1.5 rounded-md flex items-center gap-1"
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  Reject
+                                </button>
+                              </>
+                            ) : (
+                              <button className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded hover:bg-slate-100">
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Pagination (Static UI for consistent look) */}
+          {!isLoading && filteredRequests.length > 0 && (
+            <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between text-sm">
+              <div className="text-slate-500">
+                Showing {filteredRequests.length} entries
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

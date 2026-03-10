@@ -126,6 +126,12 @@ export default function ResidentLayout() {
           href: null, // <--- Hides this tab
         }}
       />
+      <Tabs.Screen
+        name="laundry"
+        options={{
+          href: null, // <--- Hides this tab
+        }}
+      />
     </Tabs>
   );
 }
