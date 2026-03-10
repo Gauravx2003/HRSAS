@@ -1,5 +1,12 @@
 import React, { useRef, useState } from "react";
-import { View, Text, Pressable, Animated, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  Animated,
+  StyleSheet,
+  Image,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 /** One cell on the back of the card */
@@ -22,6 +29,7 @@ interface FlipIdCardProps {
   // Back side
   /** Title shown in the back header (e.g. "RESIDENCE DETAILS") */
   backTitle: string;
+  profilePic?: string;
   /**
    * Items displayed in a 2-column grid on the back.
    * Pass them in row-pair order: [col1-row1, col2-row1, col1-row2, ...]
@@ -34,6 +42,7 @@ export function FlipIdCard({
   name,
   organization,
   hostel,
+  profilePic,
   subLabel,
   badge,
   backTitle,
@@ -93,8 +102,12 @@ export function FlipIdCard({
 
         {/* Body */}
         <View style={styles.idBody}>
-          <View style={styles.avatarPlaceholder}>
-            <Feather name="user" size={36} color="#94A3B8" />
+          <View style={styles.avatar}>
+            {profilePic ? (
+              <Image source={{ uri: profilePic }} style={styles.avatarImage} />
+            ) : (
+              <Feather name="user" size={36} color="#94A3B8" />
+            )}
           </View>
           <View style={styles.idDetails}>
             <Text style={styles.personName}>{name}</Text>
@@ -218,6 +231,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "#475569",
+  },
+  avatar: {
+    height: 74,
+    width: 74,
+    borderRadius: 47,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 47,
   },
   idDetails: { marginLeft: 16, flex: 1 },
   personName: { color: "white", fontSize: 20, fontWeight: "bold" },

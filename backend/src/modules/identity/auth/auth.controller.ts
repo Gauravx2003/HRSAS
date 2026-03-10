@@ -99,6 +99,7 @@ export const getMyProfileController = async (
         roomNumber: rooms.roomNumber,
         roomType: roomTypes.name,
         organization: organizations.name,
+        profilePicUrl: users.profilePicUrl,
         createdAt: users.createdAt,
       })
       .from(users)

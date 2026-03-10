@@ -85,6 +85,7 @@ export function ComplaintHistoryList({
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [chatComplaintId, setChatComplaintId] = useState("");
   const [chatComplaintTitle, setChatComplaintTitle] = useState("");
+  const [staff, setStaff] = useState("");
 
   const openHistory = async (complaint: Complaint) => {
     setHistoryComplaintTitle(complaint.title);
@@ -342,17 +343,20 @@ export function ComplaintHistoryList({
               </TouchableOpacity>
 
               {/* Chat Button */}
-              <TouchableOpacity
-                style={styles.actionLinkBtn}
-                onPress={() => {
-                  setChatComplaintId(item.id);
-                  setChatComplaintTitle(item.title);
-                  setChatModalVisible(true);
-                }}
-              >
-                <Feather name="message-circle" size={14} color="#4F46E5" />
-                <Text style={styles.actionLinkText}>Chat</Text>
-              </TouchableOpacity>
+              {item.status != "CREATED" && (
+                <TouchableOpacity
+                  style={styles.actionLinkBtn}
+                  onPress={() => {
+                    setChatComplaintId(item.id);
+                    setChatComplaintTitle(item.title);
+                    setChatModalVisible(true);
+                    setStaff(item.staffName || "Staff not assigned");
+                  }}
+                >
+                  <Feather name="message-circle" size={14} color="#4F46E5" />
+                  <Text style={styles.actionLinkText}>Chat</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Action buttons only for RESOLVED complaints */}
@@ -439,6 +443,7 @@ export function ComplaintHistoryList({
         visible={chatModalVisible}
         complaintId={chatComplaintId}
         complaintTitle={chatComplaintTitle}
+        staff={staff}
         onClose={() => setChatModalVisible(false)}
       />
     </>

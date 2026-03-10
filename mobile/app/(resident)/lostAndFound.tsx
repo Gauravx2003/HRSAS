@@ -488,7 +488,7 @@ export default function LostAndFoundScreen() {
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
               }
-              contentContainerStyle={{ padding: 20 }}
+              contentContainerStyle={{ padding: 5 }}
               ListEmptyComponent={
                 <Text style={styles.emptyText}>
                   No found items reported yet.
@@ -505,7 +505,7 @@ export default function LostAndFoundScreen() {
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
               }
-              contentContainerStyle={{ padding: 20 }}
+              contentContainerStyle={{ padding: 5 }}
               ListEmptyComponent={
                 <Text style={styles.emptyText}>
                   You haven't reported anything.

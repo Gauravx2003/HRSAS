@@ -21,6 +21,8 @@ import MessTrendChart from "../../components/messAnalytics/MessTrendChart";
 import MessCategoryPieChart from "../../components/messAnalytics/MessCategoryPieChart";
 import MessCategoryTable from "../../components/messAnalytics/MessCategoryTable";
 import { SkeletonCard } from "../../components/SkeletonCard";
+import AdminContractorTab from "../../components/messAnalytics/AdminContractorTab";
+import { UserCog } from "lucide-react";
 
 interface MessIssue {
   id: string;
@@ -39,7 +41,9 @@ interface MessIssue {
 
 const MessIssueManagement = () => {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<"issues" | "analytics">("issues");
+  const [activeTab, setActiveTab] = useState<
+    "issues" | "analytics" | "contractor"
+  >("issues");
   const [issues, setIssues] = useState<MessIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<
@@ -233,7 +237,23 @@ const MessIssueManagement = () => {
             Analytics
           </div>
         </button>
+        <button
+          onClick={() => setActiveTab("contractor")}
+          className={`px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "contractor"
+              ? "border-indigo-600 text-indigo-700"
+              : "border-transparent text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <UserCog className="w-4 h-4" />
+            Contractor
+          </div>
+        </button>
       </div>
+
+      {/* ─── CONTRACTOR TAB ─── */}
+      {activeTab === "contractor" && <AdminContractorTab />}
 
       {/* ─── ANALYTICS TAB ─── */}
       {activeTab === "analytics" &&
@@ -320,7 +340,7 @@ const MessIssueManagement = () => {
 
                     {/* Resident Info Row */}
                     <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
                         <User className="w-4 h-4 text-indigo-600" />
                       </div>
                       <div className="text-sm flex-1 min-w-0">
@@ -345,7 +365,7 @@ const MessIssueManagement = () => {
                     </div>
 
                     {/* Description */}
-                    <div className="bg-slate-50 rounded-lg p-3 mb-4 flex-grow">
+                    <div className="bg-slate-50 rounded-lg p-3 mb-4 grow">
                       <span className="text-slate-500 text-xs block mb-1">
                         Description
                       </span>

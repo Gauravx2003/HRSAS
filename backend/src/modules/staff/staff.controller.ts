@@ -1,5 +1,9 @@
 import { Authenticate } from "../../middleware/auth";
-import { getAssignedComplaints } from "./staff.service";
+import {
+  getAssignedComplaints,
+  updateComplaintByVendor,
+  getComplaintForVendor,
+} from "./staff.service";
 import { Request, Response } from "express";
 import { db } from "../../db";
 import {
@@ -53,6 +57,75 @@ export const updateComplaintStatusController = async (
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const vendorGetComplaintController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const { id } = req.params;
+    const token = req.query.token as string;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    const complaint = await getComplaintForVendor(id, token);
+    return res.status(200).json(complaint);
+  } catch (error: any) {
+    if (
+      error.name === "TokenExpiredError" ||
+      error.name === "JsonWebTokenError"
+    ) {
+      return res
+        .status(401)
+        .json({ message: "This link has expired or is invalid." });
+    }
+    return res
+      .status(400)
+      .json({ message: error.message || "Failed to fetch ticket" });
+  }
+};
+
+export const vendorUpdateComplaintController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const { id } = req.params; // complaintId
+    const { token, newStatus } = req.body;
+
+    if (!token || !newStatus) {
+      return res
+        .status(400)
+        .json({ message: "Token and newStatus are required" });
+    }
+
+    const updatedComplaint = await updateComplaintByVendor(
+      id,
+      token,
+      newStatus,
+    );
+
+    return res.status(200).json({
+      message: "Ticket updated successfully",
+      complaint: updatedComplaint,
+    });
+  } catch (error: any) {
+    // Catch JWT expiration or tampering
+    if (
+      error.name === "TokenExpiredError" ||
+      error.name === "JsonWebTokenError"
+    ) {
+      return res
+        .status(401)
+        .json({ message: "This link has expired or is invalid." });
+    }
+    return res
+      .status(400)
+      .json({ message: error.message || "Failed to update ticket" });
   }
 };
 

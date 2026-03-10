@@ -13,6 +13,8 @@ import {
   getCopiesForTitle,
   addCopies,
   discardCopy,
+  getCopiesByStatus,
+  reactivateCopy,
   getLibraryStats,
   getTopOverdues,
   getInventoryHealth,
@@ -130,11 +132,16 @@ export const returnBookController = async (
   res: Response,
 ) => {
   try {
-    const { transactionId, condition, payFineNow } = req.body;
+    const { transactionId, condition, payFineNow, fineAmount } = req.body;
     if (!transactionId) {
       return res.status(400).json({ message: "transactionId is required" });
     }
-    const result = await returnBook(transactionId, condition, payFineNow);
+    const result = await returnBook(
+      transactionId,
+      condition,
+      payFineNow,
+      fineAmount || 0,
+    );
     res.status(200).json(result);
   } catch (err: any) {
     res.status(400).json({ message: err.message });
@@ -220,6 +227,40 @@ export const discardCopyController = async (
     const { copyId } = req.params;
     const result = await discardCopy(copyId);
     res.status(200).json({ message: "Copy discarded", copy: result });
+  } catch (err: any) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+// ─── COPIES BY STATUS ───────────────────────────────
+
+export const getCopiesByStatusController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const { hostelId } = await getHostelId(req);
+    const status = req.query.status as "MAINTENANCE" | "LOST_FOREVER";
+    if (!status || !["MAINTENANCE", "LOST_FOREVER"].includes(status)) {
+      return res
+        .status(400)
+        .json({ message: "status must be MAINTENANCE or LOST_FOREVER" });
+    }
+    const copies = await getCopiesByStatus(hostelId, status);
+    res.status(200).json(copies);
+  } catch (err: any) {
+    res.status(500).json({ message: err.message || "Internal Server Error" });
+  }
+};
+
+export const reactivateCopyController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const { copyId } = req.params;
+    const result = await reactivateCopy(copyId);
+    res.status(200).json({ message: "Copy reactivated", copy: result });
   } catch (err: any) {
     res.status(400).json({ message: err.message });
   }

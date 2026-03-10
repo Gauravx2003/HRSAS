@@ -8,11 +8,17 @@ import {
   blocks,
   residentProfiles,
   rooms,
+  hostels,
 } from "../../db/schema";
 import { autoAssignPendingComplaint } from "../support/complaints/complaints.service";
 import { createNotification } from "../communication/notifications/notifications.service";
+import { sendPushNotificationToUser } from "../../services/notification.service";
 
 import { eq, and, sql } from "drizzle-orm";
+import jwt from "jsonwebtoken";
+
+const VENDOR_SECRET = process.env.VENDOR_SECRET || "vendor_super_secret_key";
+const WEB_PORTAL_URL = process.env.WEB_PORTAL_URL || "http://localhost:5173";
 
 export const getAssignedComplaints = async (
   staffId: string,
@@ -102,12 +108,28 @@ export const updateComplaintStatus = async (
         complaint.residentId,
         "Your complaint is currently in progress.",
       );
+
+      // Push notification (fire-and-forget)
+      sendPushNotificationToUser(
+        complaint.residentId,
+        "🔧 Complaint Update",
+        "Your complaint is now being worked on.",
+        { route: "/(resident)/complaints", params: { tab: "history" } },
+      );
     } else if (status === "RESOLVED") {
       // Notify resident that work is finished
       await createNotification(
         tx,
         complaint.residentId,
         "Your complaint has been marked as resolved. Please review and close it.",
+      );
+
+      // Push notification (fire-and-forget)
+      sendPushNotificationToUser(
+        complaint.residentId,
+        "✅ Complaint Resolved",
+        "Your complaint has been resolved. Please review and close it.",
+        { route: "/(resident)/complaints", params: { tab: "history" } },
       );
 
       // Decrement the staff's current tasks counter (use GREATEST to prevent negative numbers just in case)
@@ -130,6 +152,163 @@ export const updateComplaintStatus = async (
       changedAt: new Date(),
       changedBy: staffId,
     });
+
+    return updated;
+  });
+};
+
+// ─── NEW: Vendor Webhook Service ───
+
+export const getComplaintForVendor = async (
+  complaintId: string,
+  token: string,
+) => {
+  const decoded = jwt.verify(token, VENDOR_SECRET) as {
+    complaintId: string;
+    vendorId: string;
+  };
+
+  if (decoded.complaintId !== complaintId) {
+    throw new Error("Security Token mismatch.");
+  }
+
+  const [complaint] = await db
+    .select({
+      id: complaints.id,
+      title: complaints.title,
+      description: complaints.description,
+      status: complaints.status,
+      priority: complaints.priority,
+      createdAt: complaints.createdAt,
+      category: complaintCategories.name,
+      room: rooms.roomNumber,
+      block: blocks.name,
+      hostel: hostels.name,
+    })
+    .from(complaints)
+    .innerJoin(
+      complaintCategories,
+      eq(complaintCategories.id, complaints.categoryId),
+    )
+    .innerJoin(rooms, eq(rooms.id, complaints.roomId))
+    .innerJoin(blocks, eq(blocks.id, rooms.blockId))
+    .innerJoin(hostels, eq(hostels.id, blocks.hostelId))
+    .where(eq(complaints.id, complaintId));
+
+  if (!complaint) throw new Error("Ticket not found.");
+
+  return complaint;
+};
+
+export const updateComplaintByVendor = async (
+  complaintId: string,
+  token: string,
+  newStatus: "IN_PROGRESS" | "RESOLVED" | "REJECTED",
+) => {
+  // 1. Verify the Magic Token
+  const decoded = jwt.verify(token, VENDOR_SECRET) as {
+    complaintId: string;
+    vendorId: string;
+  };
+
+  if (decoded.complaintId !== complaintId) {
+    throw new Error("Security Token mismatch.");
+  }
+
+  return await db.transaction(async (tx) => {
+    const [current] = await tx
+      .select()
+      .from(complaints)
+      .where(eq(complaints.id, complaintId));
+    if (!current) throw new Error("Ticket not found.");
+
+    // ─── REJECTED: Vendor declines the task ───
+    if (newStatus === "REJECTED") {
+      if (current.status !== "ASSIGNED") {
+        throw new Error("Complaint must be in ASSIGNED state to reject");
+      }
+
+      // Revert complaint to CREATED and unassign
+      const [updated] = await tx
+        .update(complaints)
+        .set({ status: "CREATED", assignedStaff: null })
+        .where(eq(complaints.id, complaintId))
+        .returning();
+
+      // Decrement vendor's current tasks
+      await tx
+        .update(staffProfiles)
+        .set({
+          currentTasks: sql`GREATEST(${staffProfiles.currentTasks} - 1, 0)`,
+        })
+        .where(eq(staffProfiles.userId, decoded.vendorId));
+
+      // Log history
+      await tx.insert(complaintStatusHistory).values({
+        complaintId,
+        oldStatus: current.status,
+        newStatus: "CREATED",
+        changedBy: decoded.vendorId,
+        changedAt: new Date(),
+      });
+
+      // Notify — find an admin in this hostel to alert
+      const [vendor] = await tx
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.id, decoded.vendorId));
+
+      await createNotification(
+        tx,
+        current.residentId,
+        `Vendor ${vendor?.name || ""} declined your ticket. It will be reassigned.`,
+      );
+
+      return updated;
+    }
+
+    // ─── IN_PROGRESS / RESOLVED: Existing flow ───
+    if (newStatus === "IN_PROGRESS" && current.status !== "ASSIGNED") {
+      throw new Error(
+        "Complaint must be in ASSIGNED state to move to IN_PROGRESS",
+      );
+    }
+
+    if (newStatus === "RESOLVED" && current.status !== "IN_PROGRESS") {
+      throw new Error(
+        "Complaint must be in IN_PROGRESS state to move to RESOLVED",
+      );
+    }
+
+    const [updated] = await tx
+      .update(complaints)
+      .set({ status: newStatus })
+      .where(eq(complaints.id, complaintId))
+      .returning();
+
+    await tx.insert(complaintStatusHistory).values({
+      complaintId,
+      oldStatus: current.status,
+      newStatus: newStatus,
+      changedBy: decoded.vendorId,
+      changedAt: new Date(),
+    });
+
+    if (newStatus === "RESOLVED") {
+      // Decrement vendor's current tasks on resolve
+      await tx
+        .update(staffProfiles)
+        .set({
+          currentTasks: sql`GREATEST(${staffProfiles.currentTasks} - 1, 0)`,
+        })
+        .where(eq(staffProfiles.userId, decoded.vendorId));
+    }
+
+    await createNotification(
+      tx,
+      current.residentId,
+      `Vendor updated your ticket to: ${newStatus.replace("_", " ")}`,
+    );
 
     return updated;
   });

@@ -1,34 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   Alert,
-  Image,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { authService } from "@/src/services/auth.service";
-import axios from "axios";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setCredentials } from "../src/store/authSlice";
 import { Feather } from "@expo/vector-icons";
-
-// LAPTOP'S LOCAL IP ADDRESS
-// e.g., http://192.168.1.5:5000/api
-const API_URL = "http://192.168.31.29:5000/api";
+import * as SecureStore from "expo-secure-store";
 
 export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  // Grab the user from Redux
+  const user = useSelector((state: any) => state.auth.user);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // ─── THE AUTO-REDIRECT GUARD ───
+  useEffect(() => {
+    if (user) {
+      if (user.role === "RESIDENT") {
+        router.replace("/(resident)/dashboard" as any);
+      } else if (user.role === "SECURITY") {
+        router.replace("/(security)/dashboard" as any);
+      } else if (user.role === "STAFF") {
+        router.replace("/(staff)/dashboard" as any);
+      }
+    }
+  }, [user, router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -39,13 +50,19 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await authService.login({ email, password });
-
       const { user, accessToken, refreshToken } = response;
+
+      console.table("User is:", user);
 
       // 1. Save to Redux
       dispatch(setCredentials({ user, token: accessToken, refreshToken }));
 
-      //2. Redirect based on Role
+      // 2. Save to Phone's Hard Drive
+      await SecureStore.setItemAsync("refreshToken", refreshToken);
+      await SecureStore.setItemAsync("accessToken", accessToken);
+      await SecureStore.setItemAsync("user", JSON.stringify(user));
+
+      // 3. Redirect based on Role
       if (user.role === "RESIDENT") {
         router.replace("/(resident)/dashboard");
       } else if (user.role === "SECURITY") {
@@ -72,7 +89,6 @@ export default function LoginScreen() {
       {/* Header Section */}
       <View className="items-center mb-10">
         <View className="h-20 w-20 bg-blue-600 rounded-2xl items-center justify-center mb-4 shadow-lg">
-          {/* You can replace this Text with an <Image /> later */}
           <Text className="text-white text-3xl font-bold">H</Text>
         </View>
         <Text className="text-3xl font-bold text-gray-900">Welcome Back!</Text>
@@ -83,7 +99,6 @@ export default function LoginScreen() {
 
       {/* Form Section */}
       <View className="space-y-4">
-        {/* Email Input */}
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 border border-gray-200">
           <Feather name="mail" size={20} color="#6B7280" />
           <TextInput
@@ -97,7 +112,6 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* Password Input */}
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-3 border border-gray-200">
           <Feather name="lock" size={20} color="#6B7280" />
           <TextInput
@@ -127,7 +141,6 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* Login Button */}
         <TouchableOpacity
           onPress={handleLogin}
           disabled={loading}
@@ -144,7 +157,7 @@ export default function LoginScreen() {
       </View>
 
       <View className="mt-10 items-center">
-        <Text className="text-gray-400 text-xs">Habitat Hoste</Text>
+        <Text className="text-gray-400 text-xs">Habitat Hostel</Text>
       </View>
     </SafeAreaView>
   );

@@ -16,15 +16,17 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 // @ts-ignore
 import { RootState } from "../../src/store/store";
-import { logout, User } from "../../src/store/authSlice";
+import { logout, updateUser, User } from "../../src/store/authSlice";
 import { getCampusHubData } from "../../src/services/campusHub.service";
 import { registerForPushNotificationsAsync } from "@/src/utils/notificationHelper";
 import { notificationsService } from "@/src/services/notifications.service";
 import { DashboardHeader } from "../../components/DashboardHeader";
+import { authService } from "@/src/services/auth.service";
 import {
   ProfileMenuModal,
   MenuOption,
 } from "../../components/ProfileMenuModal";
+import * as SecureStore from "expo-secure-store";
 
 export default function ResidentDashboard() {
   const router = useRouter();
@@ -39,12 +41,39 @@ export default function ResidentDashboard() {
       {
         text: "Log Out",
         style: "destructive",
-        onPress: () => {
-          dispatch(logout());
-          router.replace("/");
+        onPress: async () => {
+          try {
+            // 1. Call backend first while we still have the token in memory
+            // This hits your Redis logout logic
+            await authService.logout();
+          } catch (err) {
+            console.log(
+              "Backend logout failed, continuing with local cleanup",
+              err,
+            );
+          } finally {
+            // 2. Wipe the device's hard drive storage
+            await SecureStore.deleteItemAsync("accessToken");
+            await SecureStore.deleteItemAsync("refreshToken");
+            await SecureStore.deleteItemAsync("user");
+
+            // 3. Clear Redux memory (this makes 'user' null)
+            dispatch(logout());
+
+            // 4. Force navigation to the root (Login)
+            // We use absolute path to ensure it hits index.tsx
+            router.replace("/");
+          }
         },
       },
     ]);
+  };
+
+  const handleProfilePicUpdate = (newUrl: string) => {
+    if (user) {
+      // Update Redux state with the new profile picture URL
+      dispatch(updateUser({ ...user, profilePicUrl: newUrl }));
+    }
   };
 
   const menuOptions: MenuOption[] = [
@@ -283,6 +312,7 @@ export default function ResidentDashboard() {
           <DashboardHeader
             userName={userName}
             onAvatarPress={() => setMenuVisible(true)}
+            profilePicUrl={user?.profilePicUrl}
           />
         </View>
 
@@ -495,6 +525,8 @@ export default function ResidentDashboard() {
         onClose={() => setMenuVisible(false)}
         userName={userName}
         userEmail={user?.email}
+        profilePicUrl={user?.profilePicUrl}
+        onProfilePicUpdate={handleProfilePicUpdate}
         menuOptions={menuOptions}
         onLogout={handleLogout}
       />

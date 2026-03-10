@@ -1,7 +1,7 @@
 import { Expo } from "expo-server-sdk";
 import { db } from "../db";
 import { users } from "../db/schema";
-import { isNotNull, eq } from "drizzle-orm";
+import { isNotNull, eq, and } from "drizzle-orm";
 
 // Initialize Expo SDK
 const expo = new Expo();
@@ -51,5 +51,40 @@ export const sendPushNotificationToAll = async (
     } catch (error) {
       console.error("❌ Error sending chunk:", error);
     }
+  }
+};
+
+export const sendPushNotificationToUser = async (
+  userId: string,
+  title: string,
+  body: string,
+  data: any,
+) => {
+  // 1. Fetch this user's push token
+  const [recipient] = await db
+    .select({ token: users.pushToken })
+    .from(users)
+    .where(and(eq(users.id, userId), isNotNull(users.pushToken)));
+
+  if (!recipient || !Expo.isExpoPushToken(recipient.token)) {
+    console.error(`No valid push token for user ${userId}`);
+    return;
+  }
+
+  // 2. Send the notification
+  try {
+    const ticket = await expo.sendPushNotificationsAsync([
+      {
+        to: recipient.token!,
+        sound: "default",
+        title,
+        body,
+        data,
+        priority: "high",
+      },
+    ]);
+    console.log("🚀 Notification Sent to user:", ticket);
+  } catch (error) {
+    console.error("❌ Error sending notification to user:", error);
   }
 };

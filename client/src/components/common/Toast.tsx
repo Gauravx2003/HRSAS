@@ -34,19 +34,19 @@ const TOAST_DURATION = 3500;
 const toastStyles: Record<ToastType, { bg: string; icon: React.ReactNode }> = {
   success: {
     bg: "bg-green-600",
-    icon: <CheckCircle2 className="w-5 h-5 text-white flex-shrink-0" />,
+    icon: <CheckCircle2 className="w-5 h-5 text-white shrink-0" />,
   },
   error: {
     bg: "bg-red-600",
-    icon: <AlertCircle className="w-5 h-5 text-white flex-shrink-0" />,
+    icon: <AlertCircle className="w-5 h-5 text-white shrink-0" />,
   },
   info: {
     bg: "bg-blue-600",
-    icon: <Info className="w-5 h-5 text-white flex-shrink-0" />,
+    icon: <Info className="w-5 h-5 text-white shrink-0" />,
   },
   warning: {
     bg: "bg-amber-500",
-    icon: <AlertTriangle className="w-5 h-5 text-white flex-shrink-0" />,
+    icon: <AlertTriangle className="w-5 h-5 text-white shrink-0" />,
   },
 };
 
@@ -73,13 +73,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
       {children}
 
       {/* Toast Container */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none">
+      <div className="fixed bottom-6 right-6 z-9999 flex flex-col gap-3 pointer-events-none">
         {toasts.map((toast) => {
           const style = toastStyles[toast.type];
           return (
             <div
               key={toast.id}
-              className={`${style.bg} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[280px] max-w-sm pointer-events-auto animate-slide-in`}
+              className={`${style.bg} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-70 max-w-sm pointer-events-auto animate-slide-in`}
             >
               {style.icon}
               <span className="text-sm font-medium flex-1">
@@ -87,7 +87,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
               </span>
               <button
                 onClick={() => removeToast(toast.id)}
-                className="text-white/70 hover:text-white transition-colors flex-shrink-0"
+                className="text-white/70 hover:text-white transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>

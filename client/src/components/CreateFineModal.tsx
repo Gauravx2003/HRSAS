@@ -189,142 +189,148 @@ const CreateFineModal = ({ onClose, onSuccess }: CreateFineModalProps) => {
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Block Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <Building className="w-4 h-4 inline mr-1" />
-              Block <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              value={selectedBlockId}
-              onChange={(e) => setSelectedBlockId(e.target.value)}
-              disabled={isLoadingBlocks}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">
-                {isLoadingBlocks ? "Loading blocks..." : "Select a block"}
-              </option>
-              {blocks.map((block) => (
-                <option key={block.id} value={block.id}>
-                  {block.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
+            {/* Row 1: Blocks + Rooms */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <Building className="w-4 h-4 inline mr-1" />
+                  Block <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedBlockId}
+                  onChange={(e) => setSelectedBlockId(e.target.value)}
+                  disabled={isLoadingBlocks}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {isLoadingBlocks ? "Loading blocks..." : "Select a block"}
+                  </option>
+                  {blocks.map((block) => (
+                    <option key={block.id} value={block.id}>
+                      {block.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Room Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <Home className="w-4 h-4 inline mr-1" />
-              Room <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              value={selectedRoomId}
-              onChange={(e) => setSelectedRoomId(e.target.value)}
-              disabled={!selectedBlockId || isLoadingRooms}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">
-                {!selectedBlockId
-                  ? "Select a block first"
-                  : isLoadingRooms
-                    ? "Loading rooms..."
-                    : rooms.length === 0
-                      ? "No rooms available"
-                      : "Select a room"}
-              </option>
-              {rooms.map((room) => (
-                <option key={room?.rooms.id} value={room.rooms.id}>
-                  {room.rooms.roomNumber}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Room Dropdown */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <Home className="w-4 h-4 inline mr-1" />
+                  Room <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedRoomId}
+                  onChange={(e) => setSelectedRoomId(e.target.value)}
+                  disabled={!selectedBlockId || isLoadingRooms}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {!selectedBlockId
+                      ? "Select a block first"
+                      : isLoadingRooms
+                        ? "Loading rooms..."
+                        : rooms.length === 0
+                          ? "No rooms available"
+                          : "Select a room"}
+                  </option>
+                  {rooms.map((room) => (
+                    <option key={room?.rooms.id} value={room.rooms.id}>
+                      {room.rooms.roomNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          {/* Resident Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <User className="w-4 h-4 inline mr-1" />
-              Resident <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              value={selectedResidentId}
-              onChange={(e) => setSelectedResidentId(e.target.value)}
-              disabled={!selectedRoomId || isLoadingResidents}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
-            >
-              <option value="">
-                {!selectedRoomId
-                  ? "Select a room first"
-                  : isLoadingResidents
-                    ? "Loading residents..."
-                    : residents.length === 0
-                      ? "No residents in this room"
-                      : "Select a resident"}
-              </option>
-              {residents.map((resident) => (
-                <option key={resident.id} value={resident.id}>
-                  {resident.name} ({resident.email})
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Resident Dropdown */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <User className="w-4 h-4 inline mr-1" />
+                  Resident <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={selectedResidentId}
+                  onChange={(e) => setSelectedResidentId(e.target.value)}
+                  disabled={!selectedRoomId || isLoadingResidents}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                >
+                  <option value="">
+                    {!selectedRoomId
+                      ? "Select a room first"
+                      : isLoadingResidents
+                        ? "Loading residents..."
+                        : residents.length === 0
+                          ? "No residents in this room"
+                          : "Select a resident"}
+                  </option>
+                  {residents.map((resident) => (
+                    <option key={resident.id} value={resident.id}>
+                      {resident.name} ({resident.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Category Dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <Tag className="w-4 h-4 inline mr-1" />
-              Category <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-            >
-              <option value="">Select a category</option>
-              {FINE_CATEGORIES.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Category Dropdown */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <Tag className="w-4 h-4 inline mr-1" />
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                >
+                  <option value="">Select a category</option>
+                  {FINE_CATEGORIES.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          {/* Amount */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              <DollarSign className="w-4 h-4 inline mr-1" />
-              Amount (₹) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              required
-              min="0"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-              placeholder="Enter amount"
-            />
-          </div>
+            {/* Amount */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                <DollarSign className="w-4 h-4 inline mr-1" />
+                Amount (₹) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                placeholder="Enter amount"
+              />
+            </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Description <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
-              placeholder="Enter reason for the fine"
-            />
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                required
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none resize-none"
+                placeholder="Enter reason for the fine"
+              />
+            </div>
           </div>
 
           {/* Footer Actions */}

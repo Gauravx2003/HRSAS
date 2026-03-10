@@ -9,6 +9,7 @@ import {
   Clock,
   Loader2,
   X,
+  IndianRupee,
 } from "lucide-react";
 
 interface Resident {
@@ -50,6 +51,7 @@ const ReturnDesk = () => {
     "GOOD",
   );
   const [payFineNow, setPayFineNow] = useState(false);
+  const [fineAmount, setFineAmount] = useState<number>(0);
   const [returning, setReturning] = useState(false);
   const [returnSuccess, setReturnSuccess] = useState<string | null>(null);
 
@@ -100,6 +102,7 @@ const ReturnDesk = () => {
         transactionId: returnModal.transactionId,
         condition,
         payFineNow,
+        fineAmount: condition !== "GOOD" ? fineAmount : 0,
       });
       setReturnSuccess(
         `"${returnModal.bookTitle}" returned. ${
@@ -111,6 +114,7 @@ const ReturnDesk = () => {
       setReturnModal(null);
       setCondition("GOOD");
       setPayFineNow(false);
+      setFineAmount(0);
 
       // Refresh borrowed books
       if (selectedResident) {
@@ -153,7 +157,7 @@ const ReturnDesk = () => {
       {/* Success Banner */}
       {returnSuccess && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
           <p className="text-sm font-medium text-emerald-800">
             {returnSuccess}
           </p>
@@ -367,7 +371,7 @@ const ReturnDesk = () => {
               {/* Overdue Warning */}
               {returnModal.isOverdue && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
                   <p className="text-sm text-red-700">
                     <span className="font-bold">
                       {returnModal.daysOverdue} days
@@ -392,6 +396,33 @@ const ReturnDesk = () => {
                 <option value="DAMAGED">Damaged — Needs maintenance</option>
                 <option value="LOST">Lost — Mark as lost</option>
               </select>
+
+              {/* Fine Amount for Damaged / Lost */}
+              {(condition === "DAMAGED" || condition === "LOST") && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Fine Amount
+                  </label>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="number"
+                      min={0}
+                      value={fineAmount || ""}
+                      onChange={(e) =>
+                        setFineAmount(Math.max(0, Number(e.target.value)))
+                      }
+                      placeholder="Enter fine amount"
+                      className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {condition === "DAMAGED"
+                      ? "Fine for returning the book in damaged condition"
+                      : "Fine for losing the book"}
+                  </p>
+                </div>
+              )}
 
               {/* Pay Fine Checkbox */}
               {returnModal.isOverdue && (

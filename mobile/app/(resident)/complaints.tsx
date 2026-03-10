@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 import { useSelector } from "react-redux";
 // @ts-ignore
 import { RootState } from "../../src/store/store";
@@ -25,8 +26,11 @@ import { LinearGradient } from "expo-linear-gradient";
 
 export default function ComplaintsScreen() {
   const user = useSelector((state: RootState) => state.auth.user);
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
 
-  const [activeTab, setActiveTab] = useState<"history" | "new">("history");
+  const [activeTab, setActiveTab] = useState<"history" | "new">(
+    tab === "history" || tab === "new" ? tab : "history",
+  );
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [categories, setCategories] = useState<ComplaintCategory[]>([]);
   const [loading, setLoading] = useState(false);

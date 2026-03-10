@@ -1,4 +1,5 @@
 import { db } from "../../../db";
+import jwt from "jsonwebtoken";
 import {
   complaintCategories,
   complaints,
@@ -9,6 +10,7 @@ import {
   complaintStatusHistory,
   complaintMessages,
   blocks,
+  hostels,
 } from "../../../db/schema";
 import { createNotification } from "../../communication/notifications/notifications.service";
 
@@ -25,6 +27,10 @@ import {
   gte,
   desc,
 } from "drizzle-orm";
+import { sendWhatsAppMessage } from "../../../services/whatsapp.service";
+
+const VENDOR_SECRET = process.env.VENDOR_SECRET || "vendor_super_secret_key";
+const WEB_PORTAL_URL = process.env.WEB_PORTAL_URL || "http://localhost:5173";
 
 export const createComplaint = async (
   residentId: string,
@@ -211,31 +217,37 @@ export const reassignComplaint = async (
       .select({
         ...getTableColumns(complaints),
         slaHours: complaintCategories.slaHours,
+        hostel: hostels.name,
+        block: blocks.name,
+        room: rooms.roomNumber,
       })
       .from(complaints)
       .innerJoin(
         complaintCategories,
         eq(complaints.categoryId, complaintCategories.id),
       )
+      .innerJoin(rooms, eq(complaints.roomId, rooms.id))
+      .innerJoin(blocks, eq(rooms.blockId, blocks.id))
+      .innerJoin(hostels, eq(blocks.hostelId, hostels.id))
       .where(eq(complaints.id, complaintId));
 
     if (!existingComplaint) {
       throw new Error("Complaint not found");
     }
 
-    //Validate Staff
+    // Fetch User AND Staff Profile to check if they are a VENDOR
     const [staff] = await tx
       .select()
       .from(users)
       .where(eq(users.id, newStaffId));
+    const [profile] = await tx
+      .select()
+      .from(staffProfiles)
+      .where(eq(staffProfiles.userId, newStaffId));
 
-    if (!staff) {
-      throw new Error("Staff not found");
-    }
-
-    if (staff.role !== "STAFF") {
+    if (!staff || !profile) throw new Error("Staff not found");
+    if (staff.role !== "STAFF")
       throw new Error("Staff is not a valid staff member");
-    }
 
     await tx
       .update(staffProfiles)
@@ -267,8 +279,26 @@ export const reassignComplaint = async (
       changedTo: newStaffId,
     });
 
-    //Create notification for the staff
-    await createNotification(tx, newStaffId, "You have a new complaint");
+    // 🚨 VENDOR MAGIC LINK LOGIC 🚨
+    if (profile.staffType === "VENDOR") {
+      const tokenPayload = { complaintId, vendorId: newStaffId };
+      const magicToken = jwt.sign(tokenPayload, VENDOR_SECRET, {
+        expiresIn: "48h",
+      });
+      const magicLink = `${WEB_PORTAL_URL}/vendor/ticket/${complaintId}?token=${magicToken}`;
+
+      const messagePayload = `🚨 *Habitat Hostel Maintenance*\n\nYou have a new task assigned.\n*Issue:* ${existingComplaint.title}\n\n*Location:*\n*Hostel:* ${existingComplaint.hostel}\n*Block:* ${existingComplaint.block}\n*Room:* ${existingComplaint.room}\n\nTap here to update your progress:\n${magicLink}`;
+
+      // 🚀 FIRE THE ACTUAL WHATSAPP MESSAGE
+      await sendWhatsAppMessage(staff.phone, messagePayload);
+    } else {
+      // Create normal app notification for in-house staff
+      await createNotification(
+        tx,
+        newStaffId,
+        "You have a new complaint reassigned to you",
+      );
+    }
 
     return updatedComplaint;
   });

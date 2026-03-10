@@ -1,11 +1,12 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
 
 interface DashboardHeaderProps {
   userName: string;
   onAvatarPress: () => void;
   /** Background colour of the avatar circle. Defaults to "#2563EB". */
   avatarColor?: string;
+  profilePicUrl?: string | null;
   /** Optional node rendered between the greeting and the avatar (e.g. a status badge). */
   rightSlot?: React.ReactNode;
 }
@@ -27,6 +28,7 @@ export function DashboardHeader({
   userName,
   onAvatarPress,
   avatarColor = "#2563EB",
+  profilePicUrl,
   rightSlot,
 }: DashboardHeaderProps) {
   const initials = getInitials(userName);
@@ -49,7 +51,11 @@ export function DashboardHeader({
           style={[styles.avatar, { backgroundColor: avatarColor }]}
           activeOpacity={0.8}
         >
-          <Text style={styles.avatarText}>{initials}</Text>
+          {profilePicUrl ? (
+            <Image source={{ uri: profilePicUrl }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarText}>{initials}</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -96,5 +102,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     letterSpacing: 0.5,
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 22,
   },
 });

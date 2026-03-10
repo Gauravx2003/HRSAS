@@ -35,6 +35,8 @@ export const searchResidents = async (hostelId: string, query: string) => {
 
   const q = `%${query.trim()}%`;
 
+  console.log(q);
+
   const results = await db
     .select({
       id: users.id,
@@ -343,6 +345,7 @@ export const returnBook = async (
   transactionId: string,
   condition: "GOOD" | "DAMAGED" | "LOST" = "GOOD",
   payFineNow: boolean = false,
+  damageFineAmount: number = 0,
 ) => {
   return await db.transaction(async (tx) => {
     // 1. Fetch transaction
@@ -360,10 +363,10 @@ export const returnBook = async (
     }
 
     const returnDate = new Date();
-    let fineAmount = 0;
+    let overdueFine = 0;
     let diffDays = 0;
 
-    // 2. Calculate fine
+    // 2. Calculate overdue fine
     if (returnDate > transaction.dueDate) {
       const diffTime = Math.abs(
         returnDate.getTime() - transaction.dueDate.getTime(),
@@ -387,8 +390,10 @@ export const returnBook = async (
         if (plan?.finePerDay) finePerDay = plan.finePerDay;
       }
 
-      fineAmount = diffDays * finePerDay;
+      overdueFine = diffDays * finePerDay;
     }
+
+    const totalFine = overdueFine + damageFineAmount;
 
     // 3. Update transaction
     await tx
@@ -396,8 +401,8 @@ export const returnBook = async (
       .set({
         returnDate,
         status: "RETURNED",
-        fineAmount,
-        isFinePaid: fineAmount === 0 ? true : payFineNow,
+        fineAmount: totalFine,
+        isFinePaid: totalFine === 0 ? true : payFineNow,
       })
       .where(eq(libraryTransactions.id, transactionId));
 
@@ -412,17 +417,39 @@ export const returnBook = async (
       .where(eq(bookCopies.id, transaction.copyId));
 
     // 5. Create fine payment if overdue
-    if (fineAmount > 0) {
+    if (overdueFine > 0) {
       await createPayment(
         transaction.userId,
-        fineAmount,
+        overdueFine,
         "LIBRARY_FINE",
         `Library Fine: ${diffDays} days late`,
         undefined,
       );
     }
 
-    return { message: "Book returned successfully", fineAmount, condition };
+    // 6. Create fine payment for damaged/lost book
+    if (
+      damageFineAmount > 0 &&
+      (condition === "DAMAGED" || condition === "LOST")
+    ) {
+      const desc =
+        condition === "DAMAGED"
+          ? "Library Fine: Book returned in damaged condition"
+          : "Library Fine: Book lost";
+      await createPayment(
+        transaction.userId,
+        damageFineAmount,
+        "LIBRARY_FINE",
+        desc,
+        undefined,
+      );
+    }
+
+    return {
+      message: "Book returned successfully",
+      fineAmount: totalFine,
+      condition,
+    };
   });
 };
 
@@ -557,6 +584,55 @@ export const discardCopy = async (copyId: string) => {
   const [updated] = await db
     .update(bookCopies)
     .set({ status: "LOST_FOREVER" })
+    .where(eq(bookCopies.id, copyId))
+    .returning();
+
+  return updated;
+};
+
+// ─── COPIES BY STATUS (Maintenance / Lost) ─────────────────
+
+export const getCopiesByStatus = async (
+  hostelId: string,
+  status: "MAINTENANCE" | "LOST_FOREVER",
+) => {
+  return await db
+    .select({
+      copyId: bookCopies.id,
+      status: bookCopies.status,
+      createdAt: bookCopies.createdAt,
+      bookTitle: libraryBooks.title,
+      bookAuthor: libraryBooks.author,
+      bookId: libraryBooks.id,
+    })
+    .from(bookCopies)
+    .innerJoin(libraryBooks, eq(bookCopies.bookId, libraryBooks.id))
+    .where(
+      and(
+        eq(bookCopies.status, status),
+        or(eq(libraryBooks.hostelId, hostelId), isNull(libraryBooks.hostelId)),
+      ),
+    )
+    .orderBy(asc(libraryBooks.title));
+};
+
+export const reactivateCopy = async (copyId: string) => {
+  const [copy] = await db
+    .select()
+    .from(bookCopies)
+    .where(eq(bookCopies.id, copyId));
+
+  if (!copy) {
+    throw new Error("Copy not found");
+  }
+
+  if (copy.status !== "MAINTENANCE") {
+    throw new Error("Only copies in MAINTENANCE status can be reactivated");
+  }
+
+  const [updated] = await db
+    .update(bookCopies)
+    .set({ status: "ACTIVE" })
     .where(eq(bookCopies.id, copyId))
     .returning();
 

@@ -76,6 +76,7 @@ export const loginUser = async (email: string, password: string) => {
       roomId: user.roomId,
       roomNumber: user.roomNumber,
       organizationId: user.organizationId,
+      profilePicUrl: user.profilePicUrl,
     },
   };
 };

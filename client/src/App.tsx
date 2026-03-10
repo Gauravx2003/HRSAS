@@ -31,12 +31,14 @@ import LibrarianDashboard from "./pages/librarian/LibrarianDashboard";
 import IssueDesk from "./pages/librarian/IssueDesk";
 import ReturnDesk from "./pages/librarian/ReturnDesk";
 import Inventory from "./pages/librarian/Inventory";
+import VendorTicketView from "./components/VendorTicketView";
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/vendor/ticket/:id" element={<VendorTicketView />} />
 
         {/* ADMIN*/}
         <Route

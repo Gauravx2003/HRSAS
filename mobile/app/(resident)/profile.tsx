@@ -51,6 +51,7 @@ export default function ProfileScreen() {
           name={profile?.name}
           organization={profile?.organization}
           hostel={profile?.hostel}
+          profilePic={profile?.profilePicUrl}
           subLabel={profile?.departmentId}
           badge={profile?.department}
           backTitle="RESIDENCE DETAILS"

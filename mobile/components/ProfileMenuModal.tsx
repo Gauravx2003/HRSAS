@@ -7,8 +7,13 @@ import {
   Pressable,
   StyleSheet,
   Alert,
+  Image,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useState } from "react";
+import { api } from "../src/services/api";
 
 export interface MenuOption {
   label: string;
@@ -26,6 +31,8 @@ interface ProfileMenuModalProps {
   userEmail?: string;
   /** Background colour of the large avatar in the modal header. Defaults to "#2563EB". */
   avatarColor?: string;
+  profilePicUrl?: string | null;
+  onProfilePicUpdate?: (newUrl: string) => void;
   menuOptions: MenuOption[];
   onLogout: () => void;
 }
@@ -42,10 +49,74 @@ export function ProfileMenuModal({
   userName,
   userEmail,
   avatarColor = "#2563EB",
+  profilePicUrl,
+  onProfilePicUpdate,
   menuOptions,
   onLogout,
 }: ProfileMenuModalProps) {
   const initials = getInitials(userName);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleAvatarPress = async () => {
+    try {
+      // Request permissions (handled automatically on some OS, but good practice)
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert("Permission to access camera roll is required!");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image");
+    }
+  };
+
+  const uploadImage = async (uri: string) => {
+    try {
+      setIsUploading(true);
+
+      const formData = new FormData();
+      const filename = uri.split("/").pop() || "profile.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      // @ts-ignore - React Native FormData works slightly differently than web
+      formData.append("profilePic", { uri, name: filename, type });
+
+      const response = await api.post("/users/upload-profile-pic", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data?.profilePicUrl && onProfilePicUpdate) {
+        onProfilePicUpdate(response.data.profilePicUrl);
+      }
+
+      Alert.alert("Success", "Profile picture updated successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+      Alert.alert(
+        "Upload Failed",
+        "Could not upload profile picture. Please try again.",
+      );
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <Modal
@@ -62,9 +133,28 @@ export function ProfileMenuModal({
 
           {/* User info */}
           <View style={styles.userRow}>
-            <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
+            <TouchableOpacity
+              style={[styles.avatar, { backgroundColor: avatarColor }]}
+              onPress={handleAvatarPress}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <ActivityIndicator color="white" />
+              ) : profilePicUrl ? (
+                <Image
+                  source={{ uri: profilePicUrl }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <Text style={styles.avatarText}>{initials}</Text>
+              )}
+
+              {/* Camera Icon Overlay */}
+              <View style={styles.cameraIconContainer}>
+                <Feather name="camera" size={12} color="white" />
+              </View>
+            </TouchableOpacity>
+
             <View style={styles.userInfo}>
               <Text className="font-sn-pro-bold" style={styles.userName}>
                 {userName}
@@ -148,6 +238,24 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 26,
+  },
+  cameraIconContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: -2,
+    backgroundColor: "#374151",
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "white",
   },
   avatarText: {
     color: "white",

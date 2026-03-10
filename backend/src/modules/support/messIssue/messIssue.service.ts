@@ -5,8 +5,9 @@ import {
   rooms,
   users,
   blocks,
+  messContractors,
 } from "../../../db/schema";
-import { desc, eq, getTableColumns, sql, count, gte } from "drizzle-orm";
+import { desc, eq, getTableColumns, sql, count, gte, and } from "drizzle-orm";
 
 // export const messIssues = pgTable("mess_issues", {
 //   id: uuid("id").defaultRandom().primaryKey(),
@@ -224,4 +225,119 @@ export const getMessIssueAnalytics = async () => {
       })),
     },
   };
+};
+
+// ─── Contractor Management ───
+export const getActiveContractor = async (hostelId: string) => {
+  const [activeContractor] = await db
+    .select()
+    .from(messContractors)
+    .where(
+      and(
+        eq(messContractors.hostelId, hostelId),
+        eq(messContractors.isActive, true),
+      ),
+    );
+
+  if (!activeContractor) {
+    return null; // Return null if there's no active contractor
+  }
+
+  // Calculate complaints count since contract start
+  const [{ value: foodIssuesCount }] = await db
+    .select({ value: count() })
+    .from(messIssues)
+    .leftJoin(users, eq(messIssues.userId, users.id))
+    .where(
+      and(
+        eq(users.hostelId, hostelId),
+        eq(messIssues.category, "FOOD"),
+        gte(messIssues.createdAt, new Date(activeContractor.contractStartDate)),
+      ),
+    );
+
+  const numIssues = Number(foodIssuesCount);
+
+  // Approval rating formula
+  const approvalRating = Math.max(0, 100 - numIssues * 5);
+
+  let healthStatus: "Green" | "Yellow" | "Red" = "Green";
+  let warningMessage: string | null = null;
+
+  if (numIssues >= 10) {
+    healthStatus = "Red";
+    warningMessage =
+      "Residents are not happy with mess food. High volume of food-related complaints recorded.";
+  } else if (numIssues >= 4) {
+    healthStatus = "Yellow";
+  }
+
+  return {
+    contractor: activeContractor,
+    approvalRating,
+    healthStatus,
+    warningMessage,
+    foodIssuesCount: numIssues,
+  };
+};
+
+export const terminateAndAddContractor = async ({
+  hostelId,
+  terminationReason,
+  newContractorData,
+}: {
+  hostelId: string;
+  terminationReason: string;
+  newContractorData: {
+    name: string;
+    organizationName?: string;
+    phone: string;
+    email?: string;
+    address: string;
+    fssaiLicenseNumber?: string;
+    contractStartDate: Date; // e.g. new Date()
+  };
+}) => {
+  return await db.transaction(async (trx) => {
+    // 1. Terminate current active contractor if exists
+    const [currentActive] = await trx
+      .select()
+      .from(messContractors)
+      .where(
+        and(
+          eq(messContractors.hostelId, hostelId),
+          eq(messContractors.isActive, true),
+        ),
+      );
+
+    if (currentActive) {
+      await trx
+        .update(messContractors)
+        .set({
+          isActive: false,
+          contractEndDate: new Date().toISOString() as any, // Drizzle `date` stores string YYYY-MM-DD usually, so we let Drizzle handle or just new Date() based on db type. Wait, the DB type is `date()`. We'll pass ISO string.
+          terminationReason,
+        })
+        .where(eq(messContractors.id, currentActive.id));
+    }
+
+    // 2. Insert new contractor
+    const [newContractor] = await trx
+      .insert(messContractors)
+      .values({
+        hostelId,
+        isActive: true,
+        contractStartDate:
+          newContractorData.contractStartDate.toISOString() as any, // Cast to any to bypass potential strict pg-core types for 'date'
+        name: newContractorData.name,
+        organizationName: newContractorData.organizationName,
+        phone: newContractorData.phone,
+        email: newContractorData.email,
+        address: newContractorData.address,
+        fssaiLicenseNumber: newContractorData.fssaiLicenseNumber,
+      })
+      .returning();
+
+    return newContractor;
+  });
 };

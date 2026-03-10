@@ -7,8 +7,9 @@ import {
   residentProfiles,
   rooms,
   blocks,
+  gatePasses,
 } from "../../../db/schema";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, isNull, or, gte, lte } from "drizzle-orm";
 
 export const generateQR = async () => {
   const token = uuidv4();
@@ -90,6 +91,8 @@ export const getResidentStats = async () => {
 };
 
 export const getResidentsOutside = async () => {
+  const now = new Date();
+
   // Subquery: get the latest OUT scan time per user
   const latestOut = db
     .select({
@@ -118,7 +121,38 @@ export const getResidentsOutside = async () => {
     .leftJoin(rooms, eq(rooms.id, residentProfiles.roomId))
     .leftJoin(blocks, eq(blocks.id, rooms.blockId))
     .leftJoin(latestOut, eq(latestOut.userId, users.id))
-    .where(and(eq(users.role, "RESIDENT"), eq(users.isActive, false)));
+
+    .leftJoin(
+      gatePasses,
+      and(
+        eq(gatePasses.userId, users.id),
+        eq(gatePasses.status, "APPROVED"),
+        isNull(gatePasses.actualInTime),
+
+        or(
+          //1. EXIT pass: Shielded if they actually scanned and left the hostel
+          and(eq(gatePasses.type, "EXIT"), isNull(gatePasses.actualOutTime)),
+
+          //2. ENTRY pass: Shielded if they actually scanned and entered the hostel
+          and(eq(gatePasses.type, "ENTRY"), gte(gatePasses.inTime, now)),
+
+          //3. Shielded during allowed window
+          and(
+            eq(gatePasses.type, "OVERNIGHT"),
+            gte(gatePasses.inTime, now),
+            lte(gatePasses.outTime, now),
+          ),
+        ),
+      ),
+    )
+
+    .where(
+      and(
+        eq(users.role, "RESIDENT"),
+        eq(users.isActive, false),
+        isNull(gatePasses.id),
+      ),
+    );
 
   return residents;
 };

@@ -13,6 +13,8 @@ import {
   getCopiesForTitleController,
   addCopiesController,
   discardCopyController,
+  getCopiesByStatusController,
+  reactivateCopyController,
   getStatsController,
   getTopOverduesController,
   getInventoryHealthController,
@@ -69,6 +71,12 @@ router.patch(
   "/copies/:copyId/discard",
   ...librarianAuth,
   discardCopyController,
+);
+router.get("/copies-by-status", ...librarianAuth, getCopiesByStatusController);
+router.patch(
+  "/copies/:copyId/reactivate",
+  ...librarianAuth,
+  reactivateCopyController,
 );
 
 // Dashboard Analytics

@@ -6,6 +6,8 @@ import {
   getMessIssues,
   getMyIssues,
   getMessIssueAnalytics,
+  getActiveContractor,
+  terminateAndAddContractor,
 } from "./messIssue.service";
 
 import {
@@ -110,5 +112,64 @@ export const getMessIssueAnalyticsController = async (
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Failed to fetch analytics" });
+  }
+};
+
+export const getActiveContractorController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const hostelId = req.user?.hostelId;
+    if (!hostelId) {
+      return res.status(400).json({ error: "Hostel ID is required" });
+    }
+
+    const contractorDetails = await getActiveContractor(hostelId);
+    return res.status(200).json(contractorDetails);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Failed to fetch active contractor" });
+  }
+};
+
+export const terminateAndAddContractorController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    const hostelId = req.user?.hostelId;
+    if (!hostelId) {
+      return res.status(400).json({ error: "Hostel ID is required" });
+    }
+
+    const { terminationReason, newContractorData } = req.body;
+
+    if (
+      !newContractorData ||
+      !newContractorData.name ||
+      !newContractorData.phone ||
+      !newContractorData.address
+    ) {
+      return res
+        .status(400)
+        .json({ error: "Missing required new contractor details" });
+    }
+
+    // Set contract start date
+    newContractorData.contractStartDate = new Date();
+
+    const newContractor = await terminateAndAddContractor({
+      hostelId,
+      terminationReason: terminationReason || "No reason provided",
+      newContractorData,
+    });
+
+    return res.status(201).json(newContractor);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ error: "Failed to terminate and add contractor" });
   }
 };

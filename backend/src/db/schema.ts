@@ -347,6 +347,33 @@ export const messAttendance = pgTable("mess_attendance", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const messContractors = pgTable("mess_contractors", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  hostelId: uuid("hostel_id")
+    .references(() => hostels.id)
+    .notNull(),
+
+  // --- 1. Identity Details ---
+  name: varchar("name", { length: 100 }).notNull(),
+  organizationName: varchar("organization_name", { length: 150 }), // Nullable, as requested
+
+  // --- 2. Contact & Location ---
+  phone: varchar("phone", { length: 15 }).notNull(),
+  email: varchar("email", { length: 150 }),
+  address: text("address").notNull(),
+
+  // --- 3. Compliance (The "Wow" Factor for Evaluators) ---
+  fssaiLicenseNumber: varchar("fssai_license_number", { length: 50 }), // Food Safety License
+  terminationReason: text("termination_reason"),
+
+  // --- 4. History & Lifecycle Management ---
+  isActive: boolean("is_active").default(true).notNull(),
+  contractStartDate: date("contract_start_date").notNull(),
+  contractEndDate: date("contract_end_date"), // Null means the contract is ongoing
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const sosAlerts = pgTable("sos_alerts", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id")
@@ -427,6 +454,11 @@ export const users = pgTable("users", {
   role: roleEnum("role").notNull(),
   isActive: boolean("is_active").default(true),
   pushToken: text("push_token"),
+
+  // 👇 Add these two fields
+  profilePicUrl: text("profile_pic_url"),
+  profilePicPublicId: text("profile_pic_public_id"),
+
   createdAt: timestamp("created_at").defaultNow(),
 });
 

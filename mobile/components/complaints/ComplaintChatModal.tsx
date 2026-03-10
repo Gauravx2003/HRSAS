@@ -13,6 +13,7 @@ import {
   Keyboard,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 // @ts-ignore
 import { RootState } from "@/src/store/store";
@@ -26,6 +27,7 @@ interface ChatModalProps {
   visible: boolean;
   complaintId: string;
   complaintTitle: string;
+  staff: string;
   onClose: () => void;
 }
 
@@ -33,6 +35,7 @@ export function ComplaintChatModal({
   visible,
   complaintId,
   complaintTitle,
+  staff,
   onClose,
 }: ChatModalProps) {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -167,85 +170,88 @@ export function ComplaintChatModal({
       transparent={false}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#111827" />
-          </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Complaint Chat</Text>
-            <Text style={styles.headerSubtitle} numberOfLines={1}>
-              {complaintTitle}
-            </Text>
-          </View>
-        </View>
-
-        {/* Chat Body */}
-        <View style={styles.chatBody}>
-          {loading ? (
-            <ActivityIndicator
-              size="large"
-              color="#4F46E5"
-              style={{ marginTop: 40 }}
-            />
-          ) : messages.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Feather name="message-circle" size={48} color="#CBD5E1" />
-              <Text style={styles.emptyText}>No messages yet.</Text>
-              <Text style={styles.emptySubtext}>
-                Send a message to start the conversation.
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} style={styles.backButton}>
+              <Feather name="arrow-left" size={24} color="#111827" />
+            </TouchableOpacity>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>Chat with {staff}</Text>
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {complaintTitle}
               </Text>
             </View>
-          ) : (
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              keyExtractor={(item) => item.id}
-              renderItem={renderMessage}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-              onLayout={() =>
-                flatListRef.current?.scrollToEnd({ animated: false })
-              }
-            />
-          )}
-        </View>
+          </View>
 
-        {/* Input Area */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            value={inputMessage}
-            onChangeText={setInputMessage}
-            multiline
-            maxLength={500}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!inputMessage.trim() || sending) && styles.sendButtonDisabled,
-            ]}
-            onPress={handleSend}
-            disabled={!inputMessage.trim() || sending}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="white" />
+          {/* Chat Body */}
+          <View style={styles.chatBody}>
+            {loading ? (
+              <ActivityIndicator
+                size="large"
+                color="#4F46E5"
+                style={{ marginTop: 40 }}
+              />
+            ) : messages.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Feather name="message-circle" size={48} color="#CBD5E1" />
+                <Text style={styles.emptyText}>No messages yet.</Text>
+                <Text style={styles.emptySubtext}>
+                  Send a message to start the conversation.
+                </Text>
+              </View>
             ) : (
-              <Feather
-                name="send"
-                size={20}
-                color="white"
-                style={{ marginLeft: 2 }}
+              <FlatList
+                ref={flatListRef}
+                data={messages}
+                keyExtractor={(item) => item.id}
+                renderItem={renderMessage}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+                onLayout={() =>
+                  flatListRef.current?.scrollToEnd({ animated: false })
+                }
               />
             )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+          </View>
+
+          {/* Input Area */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              placeholderTextColor="gray"
+              value={inputMessage}
+              onChangeText={setInputMessage}
+              multiline
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                (!inputMessage.trim() || sending) && styles.sendButtonDisabled,
+              ]}
+              onPress={handleSend}
+              disabled={!inputMessage.trim() || sending}
+            >
+              {sending ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Feather
+                  name="send"
+                  size={20}
+                  color="white"
+                  style={{ marginLeft: 2 }}
+                />
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -258,8 +264,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 50 : 20,
-    paddingBottom: 16,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     backgroundColor: "white",
     borderBottomWidth: 1,

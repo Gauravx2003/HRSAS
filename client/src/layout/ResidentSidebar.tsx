@@ -100,7 +100,7 @@ const SidebarItem = ({ item }: { item: any }) => {
         >
           <div className="flex items-center space-x-3">
             <Icon
-              className={`h-5 w-5 flex-shrink-0 transition-colors ${
+              className={`h-5 w-5 shrink-0 transition-colors ${
                 isActiveParent || isOpen
                   ? "text-indigo-600"
                   : "text-slate-400 group-hover:text-slate-600"
@@ -155,7 +155,7 @@ const SidebarItem = ({ item }: { item: any }) => {
       {({ isActive }) => (
         <>
           <Icon
-            className={`h-5 w-5 flex-shrink-0 transition-colors ${
+            className={`h-5 w-5 shrink-0 transition-colors ${
               isActive
                 ? "text-indigo-600"
                 : "text-slate-400 group-hover:text-slate-600"

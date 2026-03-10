@@ -81,112 +81,120 @@ export const getAllPasses = async () => {
 
 // 5. Scan QR Code Service
 export const scanGatePass = async (qrToken: string) => {
-  // 1. Find the pass by QR Token
-  const passes = await db
-    .select()
+  // 1. Find the pass AND fetch the user's name in one go
+  const [record] = await db
+    .select({
+      pass: gatePasses,
+      user: { id: users.id, name: users.name }, // Fetching user details
+    })
     .from(gatePasses)
+    .innerJoin(users, eq(gatePasses.userId, users.id))
     .where(eq(gatePasses.qrToken, qrToken))
     .limit(1);
 
-  if (passes.length === 0) {
+  if (!record) {
     throw new Error("Invalid QR Code");
   }
 
-  const pass = passes[0];
+  const { pass, user } = record;
   const now = new Date();
 
-  // 2. Logic Flow
-  // We determine action based on CURRENT STATUS and TYPE
-
-  // --- SCENARIO A: OVERNIGHT / Standard Out-and-Back ---
+  // ─── SCENARIO A: OVERNIGHT (Out-and-Back) ───
   if (pass.type === "OVERNIGHT") {
     // Step 1: Going OUT
     if (pass.status === "APPROVED") {
-      // Check if time is valid (optional, but good practice)
-      // For now, we trust the approval.
+      return db.transaction(async (tx) => {
+        await tx
+          .update(gatePasses)
+          .set({ status: "ACTIVE", actualOutTime: now })
+          .where(eq(gatePasses.id, pass.id));
 
-      // Update to ACTIVE (User is OUT)
-      await db
-        .update(gatePasses)
-        .set({
-          status: "ACTIVE",
-          actualOutTime: now,
-        })
-        .where(eq(gatePasses.id, pass.id));
+        await tx
+          .update(users)
+          .set({ isActive: false })
+          .where(eq(users.id, pass.userId));
 
-      return {
-        message: "Allowed: OUT",
-        mode: "OUT",
-        studentName: "Student", // You might want to fetch name
-        type: pass.type,
-      };
+        return {
+          message: "Allowed: OUT",
+          mode: "OUT",
+          studentName: user.name,
+          type: pass.type,
+        };
+      });
     }
 
     // Step 2: Coming IN
     if (pass.status === "ACTIVE") {
-      // Update to CLOSED (User is IN)
-      await db
-        .update(gatePasses)
-        .set({
-          status: "CLOSED",
-          actualInTime: now,
-        })
-        .where(eq(gatePasses.id, pass.id));
+      return db.transaction(async (tx) => {
+        await tx
+          .update(gatePasses)
+          .set({ status: "CLOSED", actualInTime: now })
+          .where(eq(gatePasses.id, pass.id));
 
-      return {
-        message: "Allowed: IN (Welcome Back)",
-        mode: "IN",
-        studentName: "Student",
-        type: pass.type,
-      };
+        await tx
+          .update(users)
+          .set({ isActive: true })
+          .where(eq(users.id, pass.userId));
+
+        return {
+          message: "Allowed: IN (Welcome Back)",
+          mode: "IN",
+          studentName: user.name,
+          type: pass.type,
+        };
+      });
     }
   }
 
-  // --- SCENARIO B: LATE ENTRY (Coming IN only) ---
-  if (pass.type === "ENTRY") {
-    // Status should be APPROVED.
-    // They are entering. There is no OUT scan.
+  // ─── SCENARIO B: ENTRY PASS (Coming IN only) ───
+  else if (pass.type === "ENTRY") {
     if (pass.status === "APPROVED") {
-      await db
-        .update(gatePasses)
-        .set({
-          status: "CLOSED",
-          actualInTime: now,
-          // We can optionally set actualOutTime to something if needed, but null is fine.
-        })
-        .where(eq(gatePasses.id, pass.id));
+      return db.transaction(async (tx) => {
+        await tx
+          .update(gatePasses)
+          .set({ status: "CLOSED", actualInTime: now })
+          .where(eq(gatePasses.id, pass.id));
 
-      return {
-        message: "Allowed: IN (Late Entry)",
-        mode: "IN",
-        studentName: "Student",
-        type: pass.type,
-      };
+        await tx
+          .update(users)
+          .set({ isActive: true })
+          .where(eq(users.id, pass.userId));
+
+        return {
+          message: "Allowed: IN (Late Entry)",
+          mode: "IN",
+          studentName: user.name,
+          type: pass.type,
+        };
+      });
     }
   }
 
-  // --- SCENARIO C: LATE EXIT (Going OUT only) ---
-  if (pass.type === "EXIT") {
-    // Status should be APPROVED.
-    // They are leaving.
+  // ─── SCENARIO C: EXIT PASS (Going OUT only) ───
+  else if (pass.type === "EXIT") {
     if (pass.status === "APPROVED") {
-      await db
-        .update(gatePasses)
-        .set({
-          status: "CLOSED", // Transaction closes upon exit as per request
-          actualOutTime: now,
-        })
-        .where(eq(gatePasses.id, pass.id));
+      return db.transaction(async (tx) => {
+        await tx
+          .update(gatePasses)
+          .set({ status: "CLOSED", actualOutTime: now }) // Closed immediately upon leaving
+          .where(eq(gatePasses.id, pass.id));
 
-      return {
-        message: "Allowed: OUT (Late Exit)",
-        mode: "OUT",
-        studentName: "Student", // Fetch actual name if possible
-        type: pass.type,
-      };
+        await tx
+          .update(users)
+          .set({ isActive: false })
+          .where(eq(users.id, pass.userId));
+
+        return {
+          message: "Allowed: OUT (Exit Pass)",
+          mode: "OUT",
+          studentName: user.name,
+          type: pass.type,
+        };
+      });
     }
   }
 
-  // If status is PENDING, REJECTED, CLOSED, EXPIRED, etc.
+  // ─── FALLBACK: INVALID STATE ───
+  // If we reach here, the pass type matched but the status was wrong (e.g., already CLOSED, EXPIRED, etc.)
   throw new Error(`Pass is ${pass.status} - Invalid Scan`);
 };

@@ -72,7 +72,7 @@ export const loginRateLimiter = async (
 
   const attempts = await redis.get(key);
 
-  if (attempts && parseInt(attempts) >= 15) {
+  if (attempts && parseInt(attempts) >= 5) {
     return res
       .status(429)
       .json({ message: "Too many login attempts. Try again in 15 minutes." });

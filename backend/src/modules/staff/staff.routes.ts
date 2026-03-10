@@ -7,6 +7,8 @@ import {
   getStaffProfileController,
   updateStaffStatusController,
   getSecurityProfileController,
+  vendorGetComplaintController,
+  vendorUpdateComplaintController,
 } from "./staff.controller";
 
 const router = Router();
@@ -24,6 +26,9 @@ router.patch(
   authorize(["STAFF"]),
   updateComplaintStatusController,
 );
+
+router.get("/complaints/:id/vendor-view", vendorGetComplaintController);
+router.patch("/complaints/:id/vendor-update", vendorUpdateComplaintController);
 
 router.get(
   "/by-specialization",

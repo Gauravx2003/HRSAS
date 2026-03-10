@@ -1,14 +1,18 @@
 import "../global.css";
 import { Stack } from "expo-router";
-import { Provider } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import { store } from "../src/store/store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import * as SecureStore from "expo-secure-store";
+import { setCredentials } from "../src/store/authSlice";
+import { ActivityIndicator, View } from "react-native";
 
+// Keep the splash screen visible while we fetch fonts and auth tokens
 SplashScreen.preventAutoHideAsync();
 
 // 1. Configure how notifications appear when app is in foreground
@@ -22,8 +26,11 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export default function RootLayout() {
+// ─── THE INNER COMPONENT (Safely inside the Redux Provider) ───
+function InnerLayout() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const [isReady, setIsReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
     SNProMedium: require("../assets/fonts/SNProMedium.ttf"),
@@ -33,19 +40,11 @@ export default function RootLayout() {
     SNProExtraBold: require("../assets/fonts/SNProExtraBold.ttf"),
   });
 
+  // Handle Push Notification Taps
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
-
-  useEffect(() => {
-    // 2. This listener fires when the user TAPS the notification
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
-
-        // Check if there is a route in the data
         if (data?.route) {
           console.log("🚀 Redirecting to:", data.route);
           router.push({
@@ -59,20 +58,70 @@ export default function RootLayout() {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [router]);
 
-  if (!fontsLoaded) return null;
+  // Handle Auth Persistence Bootstrapping
+  useEffect(() => {
+    const bootstrapAuth = async () => {
+      try {
+        const storedRefreshToken =
+          await SecureStore.getItemAsync("refreshToken");
+        const storedAccessToken = await SecureStore.getItemAsync("accessToken");
+        const storedUser = await SecureStore.getItemAsync("user");
 
+        if (storedRefreshToken && storedAccessToken && storedUser) {
+          dispatch(
+            setCredentials({
+              user: JSON.parse(storedUser),
+              token: storedAccessToken,
+              refreshToken: storedRefreshToken,
+            }),
+          );
+        }
+      } catch (e) {
+        console.error("Failed to restore auth state", e);
+      } finally {
+        setIsReady(true);
+      }
+    };
+
+    bootstrapAuth();
+  }, [dispatch]);
+
+  // Hide Splash Screen ONLY when both fonts are loaded and auth is checked
+  useEffect(() => {
+    if (fontsLoaded && isReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, isReady]);
+
+  // While waiting, show a centered spinner
+  if (!isReady || !fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  // The actual App Navigation
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(resident)" options={{ headerShown: false }} />
+        <Stack.Screen name="(security)" options={{ headerShown: false }} />
+        <Stack.Screen name="(staff)" options={{ headerShown: false }} />
+      </Stack>
+    </GestureHandlerRootView>
+  );
+}
+
+// ─── THE OUTER COMPONENT (Provides the Redux Store) ───
+export default function RootLayout() {
   return (
     <Provider store={store}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(resident)" options={{ headerShown: false }} />
-          <Stack.Screen name="(security)" options={{ headerShown: false }} />
-          <Stack.Screen name="(staff)" options={{ headerShown: false }} />
-        </Stack>
-      </GestureHandlerRootView>
+      <InnerLayout />
     </Provider>
   );
 }

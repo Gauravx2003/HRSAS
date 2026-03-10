@@ -5,6 +5,8 @@ import {
   getAllMessIssuesController,
   getMyMessIssuesController,
   getMessIssueAnalyticsController,
+  getActiveContractorController,
+  terminateAndAddContractorController,
 } from "./messIssue.controller";
 import { authenticate, authorize } from "../../../middleware/auth";
 
@@ -43,6 +45,20 @@ router.patch(
   authenticate,
   authorize(["ADMIN"]),
   updateMessComplaintController,
+);
+
+router.get(
+  "/contractor",
+  authenticate,
+  authorize(["ADMIN"]),
+  getActiveContractorController,
+);
+
+router.post(
+  "/contractor/terminate",
+  authenticate,
+  authorize(["ADMIN"]),
+  terminateAndAddContractorController,
 );
 
 export default router;

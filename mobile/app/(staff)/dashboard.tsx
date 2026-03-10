@@ -28,6 +28,8 @@ import {
 } from "../../components/ProfileMenuModal";
 import { UniversalScanner } from "../../components/UniversalScanner";
 import { useCameraPermissions } from "expo-camera";
+import { authService } from "@/src/services/auth.service";
+import * as SecureStore from "expo-secure-store";
 
 const AnimatedNumber = ({ target, style }: { target: number; style: any }) => {
   const [count, setCount] = useState(0);
@@ -166,14 +168,33 @@ export default function StaffDashboard() {
       {
         text: "Log Out",
         style: "destructive",
-        onPress: () => {
-          dispatch(logout());
-          router.replace("/");
+        onPress: async () => {
+          try {
+            // 1. Call backend first while we still have the token in memory
+            // This hits your Redis logout logic
+            await authService.logout();
+          } catch (err) {
+            console.log(
+              "Backend logout failed, continuing with local cleanup",
+              err,
+            );
+          } finally {
+            // 2. Wipe the device's hard drive storage
+            await SecureStore.deleteItemAsync("accessToken");
+            await SecureStore.deleteItemAsync("refreshToken");
+            await SecureStore.deleteItemAsync("user");
+
+            // 3. Clear Redux memory (this makes 'user' null)
+            dispatch(logout());
+
+            // 4. Force navigation to the root (Login)
+            // We use absolute path to ensure it hits index.tsx
+            router.replace("/");
+          }
         },
       },
     ]);
   };
-
   const menuOptions: MenuOption[] = [
     {
       label: "My Profile",

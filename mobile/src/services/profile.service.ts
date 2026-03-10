@@ -15,6 +15,7 @@ export interface Profile {
   department?: string;
   departmentId?: string;
   enrollmentNumber?: string;
+  profilePicUrl?: string;
 }
 
 export const getProfile = async (): Promise<Profile> => {

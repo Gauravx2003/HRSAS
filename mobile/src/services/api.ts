@@ -1,6 +1,7 @@
 import axios from "axios";
 import { store } from "../store/store";
 import { logout, updateAccessToken } from "../store/authSlice";
+import * as SecureStore from "expo-secure-store"; // <-- 1. Import SecureStore
 
 // ⚠️ REPLACE WITH YOUR LAPTOP'S LOCAL IP ADDRESS
 // Ensure this matches the one in global constants or index.tsx
@@ -17,6 +18,8 @@ const api = axios.create({
 // Add a request interceptor to include the token
 api.interceptors.request.use(
   (config) => {
+    // We can safely read from Redux here because _layout.tsx ensures
+    // Redux is populated from SecureStore before the app even renders.
     const state = store.getState();
     const token = state.auth.token;
     if (token) {
@@ -42,7 +45,10 @@ api.interceptors.response.use(
         const refreshToken = state.auth.refreshToken;
 
         if (!refreshToken) {
-          // No refresh token? Force logout.
+          // No refresh token? Wipe hard drive and force logout.
+          await SecureStore.deleteItemAsync("accessToken");
+          await SecureStore.deleteItemAsync("refreshToken");
+          await SecureStore.deleteItemAsync("user");
           store.dispatch(logout());
           return Promise.reject(error);
         }
@@ -50,23 +56,32 @@ api.interceptors.response.use(
         // Call Backend to get new Access Token
         // NOTE: Use raw 'axios' here, not 'api' instance, to avoid circular interceptors
         const response = await axios.post(`${API_URL}/auth/refresh`, {
-          refreshToken,
+          refreshToken, // Send in the body (matches your backend auth.service.ts)
         });
 
         const newAccessToken = response.data.accessToken;
 
-        // 1. Save new token to Redux
+        // 1. Save new token to Redux for immediate UI use
         store.dispatch(updateAccessToken(newAccessToken));
 
-        // 2. Update the header for the original failed request
+        // 2. Save new token to SecureStore so it survives app restarts
+        await SecureStore.setItemAsync("accessToken", newAccessToken);
+
+        // 3. Update the header for the original failed request
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-        // 3. Retry the original request
+        // 4. Retry the original request silently
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh token invalid or expired? Log them out.
-        console.log("Session expired completely.");
+        // Refresh token is invalid or expired?
+        console.log("Session expired completely. Logging out.");
+
+        // Wipe everything from the device and Redux
+        await SecureStore.deleteItemAsync("accessToken");
+        await SecureStore.deleteItemAsync("refreshToken");
+        await SecureStore.deleteItemAsync("user");
         store.dispatch(logout());
+
         return Promise.reject(refreshError);
       }
     }

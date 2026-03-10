@@ -13,6 +13,8 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Image,
   Pressable,
 } from "react-native";
@@ -709,108 +711,124 @@ export default function MessScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Report Mess Issue</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Feather name="x" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.label}>What's the issue?</Text>
-            <View style={styles.chipContainer}>
-              {["FOOD", "SERVICE", "HYGIENE", "INFRASTRUCTURE", "OTHER"].map(
-                (type) => (
-                  <TouchableOpacity
-                    key={type}
-                    onPress={() => setComplaintType(type as any)}
-                    style={[
-                      styles.chip,
-                      complaintType === type
-                        ? styles.chipActive
-                        : styles.chipInactive,
-                    ]}
-                  >
-                    <Text
-                      style={
-                        complaintType === type
-                          ? styles.chipTextActive
-                          : styles.chipTextInactive
-                      }
-                    >
-                      {type.toLowerCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ),
-              )}
-            </View>
-
-            <Text style={styles.label}>Issue Title</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Cold Food"
-              value={issueTitle}
-              onChangeText={setIssueTitle}
-            />
-
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-              style={styles.textArea}
-              placeholder="e.g. Rice was undercooked..."
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              value={complaintDesc}
-              onChangeText={setComplaintDesc}
-            />
-
-            {/* Image Picker Section */}
-            <Text style={styles.label}>Attach Photos (optional)</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.pickerRow}
-            >
-              {selectedImages.map((uri, idx) => (
-                <View key={idx} style={styles.pickerThumbWrap}>
-                  <Image source={{ uri }} style={styles.pickerThumb} />
-                  <TouchableOpacity
-                    style={styles.pickerRemoveBtn}
-                    onPress={() => removeImage(idx)}
-                  >
-                    <Feather name="x" size={14} color="white" />
+        <SafeAreaView style={styles.container}>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Report Mess Issue</Text>
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <Feather name="x" size={24} color="#64748B" />
                   </TouchableOpacity>
                 </View>
-              ))}
-              {selectedImages.length < 5 && (
-                <TouchableOpacity
-                  style={styles.pickerAddBtn}
-                  onPress={pickImages}
-                >
-                  <Feather name="camera" size={22} color="#94A3B8" />
-                  <Text style={styles.pickerAddText}>
-                    {selectedImages.length === 0
-                      ? "Add"
-                      : `${selectedImages.length}/5`}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </ScrollView>
 
-            <TouchableOpacity
-              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
-              onPress={handleSubmitComplaint}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <Text style={styles.submitBtnText}>Submitting...</Text>
-              ) : (
-                <Text style={styles.submitBtnText}>Submit Complaint</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+                <Text style={styles.label}>What's the issue?</Text>
+                <View style={styles.chipContainer}>
+                  {[
+                    "FOOD",
+                    "SERVICE",
+                    "HYGIENE",
+                    "INFRASTRUCTURE",
+                    "OTHER",
+                  ].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      onPress={() => setComplaintType(type as any)}
+                      style={[
+                        styles.chip,
+                        complaintType === type
+                          ? styles.chipActive
+                          : styles.chipInactive,
+                      ]}
+                    >
+                      <Text
+                        style={
+                          complaintType === type
+                            ? styles.chipTextActive
+                            : styles.chipTextInactive
+                        }
+                      >
+                        {type.toLowerCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.label}>Issue Title</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Cold Food"
+                  placeholderTextColor="#9CA3AF"
+                  value={issueTitle}
+                  onChangeText={setIssueTitle}
+                />
+
+                <Text style={styles.label}>Description</Text>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="e.g. Rice was undercooked..."
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  value={complaintDesc}
+                  onChangeText={setComplaintDesc}
+                />
+
+                {/* Image Picker Section */}
+                <Text style={styles.label}>Attach Photos (optional)</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.pickerRow}
+                >
+                  {selectedImages.map((uri, idx) => (
+                    <View key={idx} style={styles.pickerThumbWrap}>
+                      <Image source={{ uri }} style={styles.pickerThumb} />
+                      <TouchableOpacity
+                        style={styles.pickerRemoveBtn}
+                        onPress={() => removeImage(idx)}
+                      >
+                        <Feather name="x" size={14} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  {selectedImages.length < 5 && (
+                    <TouchableOpacity
+                      style={styles.pickerAddBtn}
+                      onPress={pickImages}
+                    >
+                      <Feather name="camera" size={22} color="#94A3B8" />
+                      <Text style={styles.pickerAddText}>
+                        {selectedImages.length === 0
+                          ? "Add"
+                          : `${selectedImages.length}/5`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </ScrollView>
+
+                <TouchableOpacity
+                  style={[
+                    styles.submitBtn,
+                    submitting && styles.submitBtnDisabled,
+                  ]}
+                  onPress={handleSubmitComplaint}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <Text style={styles.submitBtnText}>Submitting...</Text>
+                  ) : (
+                    <Text style={styles.submitBtnText}>Submit Complaint</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
       </Modal>
 
       {/* Fullscreen Image Viewer */}

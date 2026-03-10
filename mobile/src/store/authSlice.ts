@@ -12,6 +12,7 @@ export interface User {
   roomId?: string;
   roomNumber?: string;
   organizationId: string;
+  profilePicUrl?: string;
 }
 
 interface AuthState {
@@ -45,6 +46,9 @@ const authSlice = createSlice({
     updateAccessToken: (state, action: PayloadAction<string>) => {
       state.token = action.payload;
     },
+    updateUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -53,5 +57,6 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, updateAccessToken, logout } = authSlice.actions;
+export const { setCredentials, updateAccessToken, updateUser, logout } =
+  authSlice.actions;
 export default authSlice.reducer;
