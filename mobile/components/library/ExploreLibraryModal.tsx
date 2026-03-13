@@ -133,13 +133,14 @@ const styles = StyleSheet.create({
   searchInput: { marginLeft: 10, flex: 1, fontSize: 16, color: "#0F172A" },
   digitalLibraryContent: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 5,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: "#0F172A",
     marginBottom: 16,
+    paddingHorizontal: 5,
   },
   digitalBookCard: {
     flexDirection: "row",

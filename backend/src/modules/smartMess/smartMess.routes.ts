@@ -5,6 +5,7 @@ import {
   optInController,
   optOutController,
   scanMessController,
+  getWastageAnalyticsController,
 } from "./smartMess.controller";
 import { authenticate, authorize } from "../../middleware/auth";
 
@@ -39,6 +40,13 @@ messRouter.post(
   authenticate,
   authorize(["STAFF", "ADMIN", "SECURITY"]),
   scanMessController,
+);
+
+messRouter.get(
+  "/analytics/wastage",
+  authenticate,
+  authorize(["ADMIN", "STAFF"]),
+  getWastageAnalyticsController,
 );
 
 export default messRouter;

@@ -9,6 +9,8 @@ import {
   residentProfiles,
   rooms,
   hostels,
+  complaintAttachments,
+  escalations,
 } from "../../db/schema";
 import { autoAssignPendingComplaint } from "../support/complaints/complaints.service";
 import { createNotification } from "../communication/notifications/notifications.service";
@@ -32,7 +34,7 @@ export const getAssignedComplaints = async (
     conditions.push(eq(complaints.status, status));
   }
 
-  return await db
+  let query = db
     .select({
       id: complaints.id,
       title: complaints.title,
@@ -55,8 +57,30 @@ export const getAssignedComplaints = async (
     .innerJoin(users, eq(users.id, complaints.residentId))
     .innerJoin(residentProfiles, eq(residentProfiles.userId, users.id))
     .innerJoin(rooms, eq(rooms.id, residentProfiles.roomId))
-    .innerJoin(blocks, eq(blocks.id, rooms.blockId))
-    .where(and(...conditions)); // Spreads all active conditions into the AND block
+    .innerJoin(blocks, eq(blocks.id, rooms.blockId));
+  // Spreads all active conditions into the AND block
+
+  const assignedComplaints = await query.where(and(...conditions));
+
+  //Fetch Attachments
+  const complaintsWithAttachments = await Promise.all(
+    assignedComplaints.map(async (complaint) => {
+      const attachments = await db
+        .select({
+          id: complaintAttachments.id,
+          fileURL: complaintAttachments.fileURL,
+        })
+        .from(complaintAttachments)
+        .where(eq(complaintAttachments.complaintId, complaint.id));
+
+      return {
+        ...complaint,
+        attachments,
+      };
+    }),
+  );
+
+  return complaintsWithAttachments;
 };
 
 export const updateComplaintStatus = async (
@@ -149,7 +173,6 @@ export const updateComplaintStatus = async (
       complaintId,
       newStatus: status,
       oldStatus: complaint.status,
-      changedAt: new Date(),
       changedBy: staffId,
     });
 
@@ -215,12 +238,24 @@ export const updateComplaintByVendor = async (
     throw new Error("Security Token mismatch.");
   }
 
+  const [admin] = await db.select().from(users).where(eq(users.role, "ADMIN"));
+  const now = new Date();
+
   return await db.transaction(async (tx) => {
     const [current] = await tx
       .select()
       .from(complaints)
       .where(eq(complaints.id, complaintId));
     if (!current) throw new Error("Ticket not found.");
+
+    // await tx.insert(escalations).values({
+    //       complaintId: complaint.id,
+    //       level: 1,
+    //       escalatedTo: admin?.id,
+    //       escalatedFrom: complaint.assignedStaff,
+    //       escalatedAt: now,
+    //       reason,
+    //     });
 
     // ─── REJECTED: Vendor declines the task ───
     if (newStatus === "REJECTED") {
@@ -231,7 +266,7 @@ export const updateComplaintByVendor = async (
       // Revert complaint to CREATED and unassign
       const [updated] = await tx
         .update(complaints)
-        .set({ status: "CREATED", assignedStaff: null })
+        .set({ status: "ESCALATED" })
         .where(eq(complaints.id, complaintId))
         .returning();
 
@@ -243,11 +278,20 @@ export const updateComplaintByVendor = async (
         })
         .where(eq(staffProfiles.userId, decoded.vendorId));
 
+      await tx.insert(escalations).values({
+        complaintId,
+        level: 1,
+        escalatedTo: admin?.id,
+        escalatedFrom: decoded.vendorId,
+        escalatedAt: now,
+        reason: "Vendor rejected the task",
+      });
+
       // Log history
       await tx.insert(complaintStatusHistory).values({
         complaintId,
         oldStatus: current.status,
-        newStatus: "CREATED",
+        newStatus: "ESCALATED",
         changedBy: decoded.vendorId,
         changedAt: new Date(),
       });

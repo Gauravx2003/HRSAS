@@ -6,6 +6,7 @@ import {
   users,
   blocks,
   messContractors,
+  messIssueAttachments,
 } from "../../../db/schema";
 import { desc, eq, getTableColumns, sql, count, gte, and } from "drizzle-orm";
 
@@ -110,8 +111,6 @@ export const getMessIssues = async (status?: string) => {
 
   const issues = await query.orderBy(desc(messIssues.createdAt));
 
-  const { messIssueAttachments } = await import("../../../db/schema");
-
   const issuesWithAttachments = await Promise.all(
     issues.map(async (issue) => {
       const attachments = await db
@@ -132,13 +131,21 @@ export const getMessIssues = async (status?: string) => {
   return issuesWithAttachments;
 };
 
-export const getMyIssues = async (id: string) => {
-  const { messIssueAttachments } = await import("../../../db/schema");
+export const getMyIssues = async (id: string, status?: string) => {
+  let query = db.select().from(messIssues);
 
-  const myIssues = await db
-    .select()
-    .from(messIssues)
-    .where(eq(messIssues.userId, id));
+  const filters = [eq(messIssues.userId, id)];
+
+  if (status) {
+    filters.push(
+      eq(
+        messIssues.status,
+        status as "OPEN" | "IN_REVIEW" | "RESOLVED" | "REJECTED",
+      ),
+    );
+  }
+
+  const myIssues = await query.where(and(...filters));
 
   // Fetch attachments for each complaint
   const issuesWithAttachments = await Promise.all(

@@ -31,3 +31,8 @@ export const login = async (email: string, password: string) => {
     refreshToken: refreshToken as string,
   };
 };
+
+export const Logout = async () => {
+  // Just make the API call. Let Redux handle the local storage cleanup.
+  await api.post("/auth/logout");
+};

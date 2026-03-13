@@ -33,10 +33,7 @@ export const sendPushNotificationToAll = async (
       sound: "default",
       title: title,
       body: body,
-      data: data || {
-        route: "/(resident)/campus-hub",
-        params: { tab: "Notices" },
-      }, // Deep link to Notices page
+      data: data,
       priority: "high",
     });
   }

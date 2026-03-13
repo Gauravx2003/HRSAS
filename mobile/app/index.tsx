@@ -50,7 +50,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await authService.login({ email, password });
-      const { user, accessToken, refreshToken } = response;
+      const { user, accessToken, refreshToken, offlineToken } = response;
 
       console.table("User is:", user);
 
@@ -61,14 +61,17 @@ export default function LoginScreen() {
       await SecureStore.setItemAsync("refreshToken", refreshToken);
       await SecureStore.setItemAsync("accessToken", accessToken);
       await SecureStore.setItemAsync("user", JSON.stringify(user));
+      if (offlineToken) {
+        await SecureStore.setItemAsync("offlineIdToken", offlineToken);
+      }
 
       // 3. Redirect based on Role
       if (user.role === "RESIDENT") {
-        router.replace("/(resident)/dashboard");
+        router.replace("/(resident)/dashboard" as any);
       } else if (user.role === "SECURITY") {
-        router.replace("/(security)/dashboard");
+        router.replace("/(security)/dashboard" as any);
       } else if (user.role === "STAFF") {
-        router.replace("/(staff)/dashboard");
+        router.replace("/(staff)/dashboard" as any);
       } else {
         Alert.alert("Access Denied", "Admins must use the Web Portal.");
       }

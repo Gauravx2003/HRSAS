@@ -4,7 +4,13 @@ export interface AssignedComplaint {
   id: string;
   title: string;
   description: string;
-  status: "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED" | "REJECTED";
+  status:
+    | "ASSIGNED"
+    | "IN_PROGRESS"
+    | "RESOLVED"
+    | "ESCALATED"
+    | "REJECTED"
+    | "CLOSED";
   priority: "HIGH" | "MEDIUM" | "LOW";
   createdAt: string;
   residentId: string;
@@ -13,6 +19,7 @@ export interface AssignedComplaint {
   room: string;
   block: string;
   phone: string;
+  attachments?: { id: string; fileURL: string }[];
 }
 
 export interface StaffProfile {

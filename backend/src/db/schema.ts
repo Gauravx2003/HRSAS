@@ -1,4 +1,4 @@
-import { primaryKey } from "drizzle-orm/gel-core";
+//import { primaryKey } from "drizzle-orm/gel-core";
 import {
   pgTable,
   uuid,
@@ -10,6 +10,7 @@ import {
   pgEnum,
   numeric,
   date,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 import { MESS_ISSUE_CATEGORIES } from "../../../shared/constants";
@@ -204,6 +205,27 @@ export const eventCategoryEnum = pgEnum("event_category", [
   "WORKSHOP", // Coding bootcamp
   "MEETUP", // General gathering
   "OTHER",
+]);
+
+// Clubs and  Community Enums
+
+export const communityRoleEnum = pgEnum("community_role", [
+  "MEMBER",
+  "MODERATOR",
+  "ADMIN", // Club Admin (Student), not Hostel Admin
+]);
+
+export const postTypeEnum = pgEnum("post_type", [
+  "DISCUSSION",
+  "POLL",
+  "LFG", // Looking For Group
+  "MARKETPLACE", // Cross-posted from the marketplace
+]);
+
+export const postStatusEnum = pgEnum("post_status", [
+  "ACTIVE",
+  "LOCKED", // Comments disabled by a mod
+  "REMOVED", // Hidden by a mod due to reports
 ]);
 
 //Tables
@@ -540,7 +562,9 @@ export const complaintStatusHistory = pgTable("complaint_status_history", {
   newStatus: complaintStatusEnum("new_status"),
   changedBy: uuid("changed_by").references(() => users.id),
   changedTo: uuid("changed_to").references(() => users.id),
-  changedAt: timestamp("changed_at").defaultNow(),
+  changedAt: timestamp("changed_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const complaintMessages = pgTable("complaint_messages", {
@@ -862,6 +886,8 @@ export const attendanceLogs = pgTable("attendance_logs", {
 
   qrTokenUsed: text("qr_token_used"), // Audit trail
 
+  isOfflineSync: boolean("is_offline_sync").default(false),
+
   // Optional: Store location for proof
   latitude: numeric("latitude"),
   longitude: numeric("longitude"),
@@ -1012,3 +1038,197 @@ export const itemBidsRelations = relations(itemBids, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// ─── 1. COMMUNITIES (The "Subreddits") ───
+export const communities = pgTable("communities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  hostelId: uuid("hostel_id")
+    .references(() => hostels.id)
+    .notNull(),
+
+  name: varchar("name", { length: 50 }).notNull(), // e.g., "music", "gaming" (without the h/)
+  description: text("description").notNull(),
+  isPrivate: boolean("is_private").default(false), // If true, requires mod approval to join
+
+  avatarUrl: text("avatar_url"), // Cloudinary URL for club logo
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── 2. COMMUNITY MEMBERS (Access & Roles) ───
+export const communityMembers = pgTable(
+  "community_members",
+  {
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    communityId: uuid("community_id")
+      .references(() => communities.id, { onDelete: "cascade" })
+      .notNull(),
+
+    role: communityRoleEnum("role").default("MEMBER").notNull(),
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    // Composite Primary Key: A user can only join a specific community once
+    pk: primaryKey({ columns: [t.userId, t.communityId] }),
+  }),
+);
+
+// ─── 3. POSTS (The Core Feed) ───
+export const posts = pgTable("posts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  communityId: uuid("community_id")
+    .references(() => communities.id, { onDelete: "cascade" })
+    .notNull(),
+  authorId: uuid("author_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+
+  type: postTypeEnum("type").default("DISCUSSION").notNull(),
+
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content"), // Nullable because a Marketplace post might just be a title + reference
+
+  // THE MAGIC LINK: This ID connects to a marketplaceItem, a poll, or an LFG lobby
+  referenceId: uuid("reference_id"),
+
+  upvotes: integer("upvotes").default(0),
+  downvotes: integer("downvotes").default(0),
+  comments: integer("comments").default(0),
+
+  status: postStatusEnum("status").default("ACTIVE").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── 4. COMMENTS ───
+export const comments = pgTable("comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  postId: uuid("post_id")
+    .references(() => posts.id, { onDelete: "cascade" })
+    .notNull(),
+  authorId: uuid("author_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+
+  // Self-referencing ID for threaded replies (like Reddit)
+  parentCommentId: uuid("parent_comment_id"),
+
+  content: text("content").notNull(),
+  upvotes: integer("upvotes").default(0),
+  downvotes: integer("downvotes").default(0),
+
+  isRemoved: boolean("is_removed").default(false), // Mod deletion
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── 5. LFG & POLL METADATA (Actionable Posts) ───
+export const postLobbies = pgTable("post_lobbies", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  postId: uuid("post_id")
+    .references(() => posts.id, { onDelete: "cascade" })
+    .notNull(),
+
+  maxCapacity: integer("max_capacity").notNull(), // e.g., Need 4 players
+  currentJoined: integer("current_joined").default(1), // Starts with the author
+
+  eventTime: timestamp("event_time"), // "Valorant tonight at 10 PM"
+  isActive: boolean("is_active").default(true),
+});
+
+export const lobbyParticipants = pgTable(
+  "lobby_participants",
+  {
+    lobbyId: uuid("lobby_id")
+      .references(() => postLobbies.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.lobbyId, t.userId] }),
+  }),
+);
+
+// ─── POLL OPTIONS ───
+export const pollOptions = pgTable("poll_options", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  postId: uuid("post_id")
+    .references(() => posts.id, { onDelete: "cascade" })
+    .notNull(),
+
+  optionText: varchar("option_text", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── POLL VOTES (Who voted for what) ───
+export const pollVotes = pgTable(
+  "poll_votes",
+  {
+    postId: uuid("post_id")
+      .references(() => posts.id, { onDelete: "cascade" })
+      .notNull(),
+    optionId: uuid("option_id")
+      .references(() => pollOptions.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: uuid("user_id")
+      .references(() => users.id, { onDelete: "cascade" })
+      .notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    // Composite Key: A user can only have ONE vote per Post (Poll)
+    pk: primaryKey({ columns: [t.postId, t.userId] }),
+  }),
+);
+
+// ─── 6. MODERATION / REPORTS ───
+export const reports = pgTable("reports", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  reportedBy: uuid("reported_by")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+
+  targetType: varchar("target_type", { length: 20 }).notNull(), // "POST" or "COMMENT"
+  targetId: uuid("target_id").notNull(), // ID of the post or comment
+
+  reason: text("reason").notNull(), // "Hate speech", "Spam"
+  isResolved: boolean("is_resolved").default(false), // Mod checked it off
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const postAttachments = pgTable("post_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  postId: uuid("post_id")
+    .references(() => posts.id, { onDelete: "cascade" })
+    .notNull(),
+  uploadedBy: uuid("uploaded_by")
+    .references(() => users.id)
+    .notNull(),
+
+  fileURL: text("file_url").notNull(), // Cloudinary secure Url
+  publicId: text("public_id").notNull(), // Cloudinary Public ID
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Add to your enums at the top
+export const voteTypeEnum = pgEnum("vote_type", ["UP", "DOWN"]);
+
+// Add to your tables
+export const votes = pgTable("votes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+
+  targetType: varchar("target_type", { length: 20 }).notNull(), // "POST" or "COMMENT"
+  targetId: uuid("target_id").notNull(),
+
+  type: voteTypeEnum("type").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

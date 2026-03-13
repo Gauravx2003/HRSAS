@@ -10,6 +10,7 @@ import {
   gatePasses,
 } from "../../../db/schema";
 import { eq, and, sql, desc, isNull, or, gte, lte } from "drizzle-orm";
+import * as OTPAuth from "otpauth";
 
 export const generateQR = async () => {
   const token = uuidv4();
@@ -20,18 +21,42 @@ export const generateQR = async () => {
 };
 
 export const verifyQR = async (token: string, userId: string) => {
-  // Check if token exists in Redis
-  const isValid = await redis.get(`qr:${token}`);
+  const secret = process.env.GATE_TOTP_SECRET;
+  if (!secret)
+    throw new Error("Server configuration error: TOTP secret missing");
 
-  if (!isValid) {
+  // 1. 🚨 Configure the TOTP Engine (10-second period to perfectly match the frontend)
+  const totp = new OTPAuth.TOTP({
+    issuer: "HabitatHostel",
+    label: "Gate",
+    algorithm: "SHA1",
+    digits: 6,
+    period: 10,
+    secret: secret, // otpauth automatically parses Base32 strings!
+  });
+
+  // 2. 🚨 Validate the token.
+  // window: 1 means it checks the current 10s window, plus 1 before and 1 after (handling network lag).
+  // It returns an integer (the delta) if valid, or null if invalid.
+  const delta = totp.validate({ token, window: 1 });
+
+  if (delta === null) {
     throw new Error("QR Code Expired or Invalid");
   }
 
-  // If valid, immediately delete it so it can't be reused (Replay Attack Prevention)
-  await redis.del(`qr:${token}`);
-
   // Find the LAST log for this user
   return await db.transaction(async (tx) => {
+    const [existingScan] = await tx.query.attendanceLogs.findMany({
+      where: (logs, { eq }) => eq(logs.qrTokenUsed, token),
+      limit: 1,
+    });
+
+    if (existingScan) {
+      throw new Error(
+        "This QR code has already been scanned. Please wait for the next one.",
+      );
+    }
+
     const lastLog = await tx.query.attendanceLogs.findFirst({
       // Use the callback to access 'eq' and the table columns
       where: (attendanceLogs, { eq }) => eq(attendanceLogs.userId, userId),
@@ -155,4 +180,69 @@ export const getResidentsOutside = async () => {
     );
 
   return residents;
+};
+
+// The TypeScript interface for the incoming offline payload
+export interface OfflineLog {
+  userId: string;
+  direction: "IN" | "OUT";
+  scannedAt: string; // ISO Date String from the tablet
+}
+
+export const syncOfflineLogs = async (
+  records: OfflineLog[],
+  securityGuardId: string,
+) => {
+  if (!records || records.length === 0) return [];
+
+  return await db.transaction(async (tx) => {
+    const valuesToInsert = records.map((record) => {
+      // Create a date object from the tablet's UTC string
+      const utcDate = new Date(record.scannedAt);
+
+      // Manually add 5 hours and 30 minutes (IST Offset)
+      // 5.5 hours * 60 mins * 60 secs * 1000 ms
+      const istDate = new Date(utcDate.getTime() + 5.5 * 60 * 60 * 1000);
+
+      return {
+        userId: record.userId,
+        direction: record.direction,
+        scanTime: istDate, // 🚨 Now it matches your database's local clock!
+        scannedBy: securityGuardId,
+        isOfflineSync: true,
+      };
+    });
+
+    const syncedRecords = await tx
+      .insert(attendanceLogs)
+      .values(valuesToInsert)
+      .returning();
+
+    // 2. Get a list of unique user IDs from this batch
+    // (Using a Set prevents us from updating the same user twice if they scanned IN and OUT offline)
+    const uniqueUserIds = Array.from(new Set(records.map((r) => r.userId)));
+
+    // 3. 🚨 FIX: Use a sequential for...of loop instead of Promise.all inside a transaction
+    for (const userId of uniqueUserIds) {
+      // Find the absolute latest log for this user
+      const latestLog = await tx.query.attendanceLogs.findFirst({
+        where: (logs, { eq }) => eq(logs.userId, userId),
+        orderBy: (logs, { desc }) => [desc(logs.scanTime)],
+      });
+
+      console.log("Latest Log is:", latestLog);
+
+      // If a log exists, update the user's status
+      if (latestLog) {
+        await tx
+          .update(users)
+          .set({
+            isActive: latestLog.direction === "IN",
+          })
+          .where(eq(users.id, userId));
+      }
+    }
+
+    return syncedRecords;
+  });
 };

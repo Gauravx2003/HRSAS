@@ -42,6 +42,11 @@ export const logoutController = async (req: Authenticate, res: Response) => {
 
     const { userId, sessionId } = req.user;
 
+    await db
+      .update(users)
+      .set({ pushToken: null }) // 👈 THE CRITICAL FIX
+      .where(eq(users.id, userId));
+
     // UPDATE: Delete the Refresh Token key
     const redisKey = `refresh_token:${userId}:${sessionId}`;
     await redis.del(redisKey);
@@ -78,12 +83,12 @@ export const getMyProfileController = async (
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    const cacheKey = `user:profile:${user.userId}`;
+    // const cacheKey = `user:profile:${user.userId}`;
 
-    const cachedProfile = await redis.get(cacheKey);
-    if (cachedProfile) {
-      return res.json(JSON.parse(cachedProfile));
-    }
+    // const cachedProfile = await redis.get(cacheKey);
+    // if (cachedProfile) {
+    //   return res.json(JSON.parse(cachedProfile));
+    // }
 
     const [profile] = await db
       .select({
@@ -97,6 +102,7 @@ export const getMyProfileController = async (
         hostel: hostels.name,
         block: blocks.name,
         roomNumber: rooms.roomNumber,
+        isActive: users.isActive,
         roomType: roomTypes.name,
         organization: organizations.name,
         profilePicUrl: users.profilePicUrl,
@@ -111,7 +117,7 @@ export const getMyProfileController = async (
       .leftJoin(organizations, eq(hostels.organizationId, organizations.id))
       .where(eq(users.id, user.userId));
 
-    await redis.set(cacheKey, JSON.stringify(profile), "EX", 86400);
+    // await redis.set(cacheKey, JSON.stringify(profile), "EX", 86400);
 
     return res.json({ ...profile });
   } catch (err) {

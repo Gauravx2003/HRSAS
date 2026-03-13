@@ -6,6 +6,7 @@ interface LoginResponse {
   user: any;
   accessToken: string; // Matches backend
   refreshToken: string; // Matches backend
+  offlineToken?: string;
 }
 
 interface Credentials {

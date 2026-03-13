@@ -287,6 +287,8 @@ export const reassignComplaint = async (
       });
       const magicLink = `${WEB_PORTAL_URL}/vendor/ticket/${complaintId}?token=${magicToken}`;
 
+      console.log("Magic Link:", magicLink);
+
       const messagePayload = `🚨 *Habitat Hostel Maintenance*\n\nYou have a new task assigned.\n*Issue:* ${existingComplaint.title}\n\n*Location:*\n*Hostel:* ${existingComplaint.hostel}\n*Block:* ${existingComplaint.block}\n*Room:* ${existingComplaint.room}\n\nTap here to update your progress:\n${magicLink}`;
 
       // 🚀 FIRE THE ACTUAL WHATSAPP MESSAGE
@@ -333,7 +335,6 @@ export const residentCloseComplaint = async (
       complaintId,
       newStatus: "CLOSED",
       oldStatus: complaint.status,
-      changedAt: new Date(),
       changedBy: residentId,
     });
 
@@ -377,7 +378,6 @@ export const residentRejectResolution = async (
       complaintId,
       newStatus: "ESCALATED",
       oldStatus: complaint.status,
-      changedAt: new Date(),
       changedBy: residentId,
       changedTo: admin?.id,
     });

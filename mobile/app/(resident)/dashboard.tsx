@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
+import { Href } from "expo-router";
 import {
   View,
   Text,
@@ -22,19 +23,29 @@ import { registerForPushNotificationsAsync } from "@/src/utils/notificationHelpe
 import { notificationsService } from "@/src/services/notifications.service";
 import { DashboardHeader } from "../../components/DashboardHeader";
 import { authService } from "@/src/services/auth.service";
+import { QUICK_ACTIONS, MENU_OPTIONS } from "@/constants/ResidentDashboard";
+import { getProfile } from "@/src/services/profile.service";
 import {
   ProfileMenuModal,
   MenuOption,
 } from "../../components/ProfileMenuModal";
 import * as SecureStore from "expo-secure-store";
+import { AppState } from "react-native";
+import NetInfo, { useNetInfo } from "@react-native-community/netinfo";
+import { useResidentStatusSync } from "@/hooks/useResidentStatusSync";
 
 export default function ResidentDashboard() {
   const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
+  const netInfo = useNetInfo();
   const userName = user?.name || "Student";
   const [menuVisible, setMenuVisible] = useState(false);
   const [showAllQuickActions, setShowAllQuickActions] = useState(false);
+
+  useResidentStatusSync();
+
+  const isOffline = netInfo.isConnected === false;
 
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to log out?", [
@@ -57,13 +68,14 @@ export default function ResidentDashboard() {
             await SecureStore.deleteItemAsync("accessToken");
             await SecureStore.deleteItemAsync("refreshToken");
             await SecureStore.deleteItemAsync("user");
+            await SecureStore.deleteItemAsync("offlineIdToken");
 
             // 3. Clear Redux memory (this makes 'user' null)
             dispatch(logout());
 
             // 4. Force navigation to the root (Login)
             // We use absolute path to ensure it hits index.tsx
-            router.replace("/");
+            router.replace("/" as any);
           }
         },
       },
@@ -193,73 +205,6 @@ export default function ResidentDashboard() {
     outputRange: ["-3deg", "0deg", "3deg"],
   });
 
-  // Quick Action Buttons Data
-  const actions = [
-    {
-      label: "Attendance",
-      icon: "user-check",
-      route: "/(resident)/attendance",
-      color: "bg-indigo-100",
-      iconColor: "#4F46E5",
-    },
-    {
-      label: "Marketplace",
-      icon: "shopping-cart",
-      route: "/(resident)/Marketplace",
-      color: "bg-blue-100",
-      iconColor: "#328ad6ff",
-    },
-    {
-      label: "Payments",
-      icon: "credit-card",
-      route: "/(resident)/payments",
-      color: "bg-green-100",
-      iconColor: "#10B981",
-    },
-    {
-      label: "Gate Pass",
-      icon: "key",
-      route: "/(resident)/gate-pass",
-      color: "bg-purple-100",
-      iconColor: "#7C3AED",
-    },
-    {
-      label: "Visitor",
-      icon: "users",
-      route: "/(resident)/visitors",
-      color: "bg-pink-100",
-      iconColor: "#DB2777",
-    },
-    {
-      label: "Library",
-      icon: "book",
-      route: "/(resident)/library",
-      color: "bg-orange-100",
-      iconColor: "#EA580C",
-    },
-    {
-      label: "Campus Hub",
-      icon: "globe",
-      route: "/(resident)/campus-hub",
-      color: "bg-teal-100",
-      iconColor: "#0D9488",
-    },
-    {
-      label: "Lost & Found",
-      icon: "search",
-      route: "/(resident)/lostAndFound",
-      color: "bg-red-100",
-      iconColor: "#DC2626",
-    },
-    {
-      label: "Laundry",
-      icon: "droplet",
-      route: "/(resident)/laundry",
-      color: "bg-blue-100",
-      iconColor: "#0D9488",
-    },
-  ];
-
   // ── Data Fetching ───────────────────────────────────────
   const [latestEvent, setLatestEvent] = React.useState<any>(null);
   const [urgentNotice, setUrgentNotice] = React.useState<any>(null);
@@ -318,16 +263,39 @@ export default function ResidentDashboard() {
         </View>
 
         {/* 2. Status Card */}
-        <View className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex-row items-center justify-between mb-6">
-          <View className="flex-row items-center space-x-3">
-            <View className="h-3 w-3 bg-green-500 rounded-full" />
-            <Text className="font-sn-pro-medium text-gray-700 text-base ml-2">
-              Status: In Hostel
-            </Text>
+        <View className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex-col">
+          {/* Top Row: The actual status */}
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              {/* Dynamic Color based on user.isActive */}
+              <View
+                className={`h-3 w-3 rounded-full ${user?.isActive ? "bg-green-500" : "bg-red-500"}`}
+              />
+              {/* Dynamic Text: Adapts prefix if offline */}
+              <Text className="font-sn-pro-medium text-gray-700 text-base ml-2">
+                {netInfo.isConnected === false ? "Last Known: " : "Status: "}
+                <Text
+                  className={user?.isActive ? "text-green-600" : "text-red-600"}
+                >
+                  {user?.isActive ? "In Hostel" : "Out of Hostel"}
+                </Text>
+              </Text>
+            </View>
+            <TouchableOpacity>
+              <Text className="font-sn-pro-medium text-blue-600">History</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity>
-            <Text className="font-sn-pro-medium text-blue-600">Change</Text>
-          </TouchableOpacity>
+
+          {/* 🚨 Bottom Row: The Offline Warning Banner (Only mounts if no internet) */}
+          {netInfo.isConnected === false && (
+            <View className="flex-row items-center mt-3 bg-orange-50 p-2 rounded-xl border border-orange-100">
+              <Feather name="wifi-off" size={14} color="#EA580C" />
+              <Text className="font-sn-pro text-orange-600 text-xs ml-2 flex-1 leading-tight">
+                You are offline. Your true status will sync automatically when
+                the connection is restored.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* ★ TODAY'S EVENT BANNER ──────────────────── */}
@@ -508,26 +476,27 @@ export default function ResidentDashboard() {
           </TouchableOpacity>
         </View>
         <View className="flex-row flex-wrap justify-between">
-          {(showAllQuickActions ? actions : actions.slice(0, 3)).map(
-            (action, index) => (
-              <TouchableOpacity
-                key={index}
-                className="w-[31%] bg-white p-3 rounded-2xl mb-4 shadow-sm border border-gray-100 items-center justify-center space-y-2"
-                onPress={() => router.push(action.route as any)}
-              >
-                <View className={`p-3 rounded-full ${action.color} mb-2`}>
-                  <Feather
-                    name={action.icon as any}
-                    size={22}
-                    color={action.iconColor}
-                  />
-                </View>
-                <Text className="font-sn-pro-medium text-center text-xs text-gray-700">
-                  {action.label}
-                </Text>
-              </TouchableOpacity>
-            ),
-          )}
+          {(showAllQuickActions
+            ? QUICK_ACTIONS
+            : QUICK_ACTIONS.slice(0, 3)
+          ).map((action, index) => (
+            <TouchableOpacity
+              key={index}
+              className="w-[31%] bg-white p-3 rounded-2xl mb-4 shadow-sm border border-gray-100 items-center justify-center space-y-2"
+              onPress={() => router.push(action.route as any)}
+            >
+              <View className={`p-3 rounded-full ${action.color} mb-2`}>
+                <Feather
+                  name={action.icon as any}
+                  size={22}
+                  color={action.iconColor}
+                />
+              </View>
+              <Text className="font-sn-pro-medium text-center text-xs text-gray-700">
+                {action.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
 

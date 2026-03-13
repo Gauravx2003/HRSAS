@@ -23,6 +23,7 @@ import { Feather } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "expo-router";
+import { MessIssueHistoryList } from "@/components/smartMess/MessIssuesHistory";
 
 import {
   messService,
@@ -43,8 +44,6 @@ export default function MessScreen() {
   // State
   const [menu, setMenu] = useState<MessMenu[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
-  const [isEating, setIsEating] = useState(false);
-  const [activeMeal, setActiveMeal] = useState("Lunch");
 
   // Issues Data
   const [myIssues, setMyIssues] = useState<MessIssue[]>([]);
@@ -60,7 +59,7 @@ export default function MessScreen() {
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
 
   // Fullscreen Image Viewer
-  const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [viewerImages, setViewerImages] = useState<any[] | null>(null);
 
   // State for Opt-In interaction
   const [optingIn, setOptingIn] = useState(false);
@@ -71,7 +70,7 @@ export default function MessScreen() {
   const activeMealIndex = menu.findIndex((m) => {
     const sTime = new Date(m.servingTime);
     const eTime = new Date(sTime);
-    eTime.setHours(sTime.getHours() + 2);
+    eTime.setHours(sTime.getHours() + 1);
     return new Date() < eTime;
   });
 
@@ -121,7 +120,6 @@ export default function MessScreen() {
     }
   }, []);
 
-  // Replace useEffect with this:
   useFocusEffect(
     useCallback(() => {
       fetchMenu();
@@ -274,137 +272,47 @@ export default function MessScreen() {
     }
   };
 
-  const renderStatusBadge = (status: string) => {
-    let bg = "#F1F5F9";
-    let color = "#475569";
-
-    switch (status) {
-      case "RESOLVED":
-        bg = "#DCFCE7";
-        color = "#16A34A";
-        break;
-      case "REJECTED":
-        bg = "#FEE2E2";
-        color = "#B91C1C";
-        break;
-      case "IN_REVIEW":
-        bg = "#DBEAFE";
-        color = "#2563EB";
-        break;
-      case "OPEN":
-        bg = "#FEF9C3";
-        color = "#CA8A04";
-        break;
-    }
-
-    return (
-      <View style={[styles.statusBadge, { backgroundColor: bg }]}>
-        <Text style={[styles.statusText, { color }]}>{status}</Text>
-      </View>
-    );
-  };
-
-  const renderIssuesList = () => {
-    if (loadingIssues && !refreshing) {
-      return (
-        <ActivityIndicator
-          size="large"
-          color="#B91C1C"
-          style={{ marginTop: 40 }}
-        />
-      );
-    }
-
-    return (
-      <FlatList
-        data={myIssues}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="check-circle" size={48} color="#CBD5E1" />
-            <Text style={styles.emptyText}>No issues reported yet.</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.issueCard}>
-            <View style={styles.issueHeader}>
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryText}>{item.category}</Text>
-              </View>
-              {renderStatusBadge(item.status)}
-            </View>
-            <Text style={styles.issueTitle}>{item.issueTitle}</Text>
-            <Text style={styles.issueDate}>
-              {new Date(item.createdAt).toLocaleDateString()}
-            </Text>
-            <Text style={styles.issueDesc} numberOfLines={2}>
-              {item.issueDescription}
-            </Text>
-            {/* Attachment Thumbnails */}
-            {item.attachments && item.attachments.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.attachmentRow}
-              >
-                {item.attachments.map((att) => (
-                  <TouchableOpacity
-                    key={att.id}
-                    onPress={() => setViewerImage(att.fileURL)}
-                    activeOpacity={0.85}
-                  >
-                    <Image
-                      source={{ uri: att.fileURL }}
-                      style={styles.attachmentThumb}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-            {item.adminResponse && (
-              <View style={styles.adminResponse}>
-                <Text style={styles.adminResponseLabel}>Admin Response:</Text>
-                <Text style={styles.adminResponseText}>
-                  {item.adminResponse}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-      />
-    );
-  };
-
   // ─── Fullscreen Image Viewer ───
   const renderImageViewer = () => (
     <Modal
-      visible={!!viewerImage}
+      visible={!!viewerImages}
       transparent
       animationType="fade"
-      onRequestClose={() => setViewerImage(null)}
+      onRequestClose={() => setViewerImages(null)}
     >
-      <Pressable
-        style={styles.imageViewerBackdrop}
-        onPress={() => setViewerImage(null)}
-      >
+      <View style={styles.imageViewerBackdrop}>
         <TouchableOpacity
           style={styles.imageViewerClose}
-          onPress={() => setViewerImage(null)}
+          onPress={() => setViewerImages(null)}
         >
           <Feather name="x" size={24} color="white" />
         </TouchableOpacity>
-        {viewerImage && (
-          <Image
-            source={{ uri: viewerImage }}
-            style={styles.imageViewerFull}
-            resizeMode="contain"
+        {viewerImages && (
+          <FlatList
+            data={viewerImages}
+            keyExtractor={(item, index) => item.id || index.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View
+                style={{
+                  width,
+                  height: Dimensions.get("window").height,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Image
+                  source={{ uri: item.fileURL }}
+                  style={styles.imageViewerFull}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
           />
         )}
-      </Pressable>
+      </View>
     </Modal>
   );
 
@@ -701,7 +609,12 @@ export default function MessScreen() {
             )}
           </ScrollView>
         ) : (
-          renderIssuesList()
+          <MessIssueHistoryList
+            issues={myIssues}
+            loading={loadingIssues}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
         )}
       </View>
       {/* --- COMPLAINT MODAL --- */}
@@ -1023,37 +936,79 @@ const styles = StyleSheet.create({
   },
   activeTagText: { fontSize: 10, fontWeight: "700", color: "#2563EB" },
 
-  // Issues List
-  issueCard: {
+  // Issues List Card Matches ComplaintHistoryList
+  card: {
     backgroundColor: "white",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#F3F4F6",
   },
-  issueHeader: {
+  cardTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  cardInfoCol: {
+    flex: 1,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     marginBottom: 8,
   },
-  categoryBadge: {
-    backgroundColor: "#F1F5F9",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+  catBadge: {
+    backgroundColor: "#F3E8FF",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  categoryText: { fontSize: 10, fontWeight: "700", color: "#475569" },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  catText: {
+    color: "#7E22CE",
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: "700" },
-  issueTitle: {
+  cardTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#0F172A",
+    fontWeight: "700",
+    color: "#111827",
     marginBottom: 4,
   },
-  issueDate: { fontSize: 12, color: "#94A3B8", marginBottom: 8 },
-  issueDesc: { fontSize: 14, color: "#475569", lineHeight: 20 },
+  cardDesc: { color: "#6B7280", marginTop: 2, fontSize: 13, lineHeight: 18 },
+  cardImageCol: {
+    width: 68,
+    height: 68,
+  },
+  stackPreviewContainer: {
+    width: 68,
+    height: 68,
+  },
+  stackImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    position: "absolute",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+  },
+  cardDateText: {
+    fontSize: 12,
+    color: "#64748B",
+  },
+  // Removed deprecated issue properties
   adminResponse: {
     marginTop: 12,
     backgroundColor: "#F8FAFC",
@@ -1150,19 +1105,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#DC2626", // Lighter red or different shade
     opacity: 0.7,
   },
-  // Attachment Thumbnails
-  attachmentRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
-    paddingBottom: 4,
-  },
-  attachmentThumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 10,
-    backgroundColor: "#F1F5F9",
-  },
+  // Removed old Attachment Thumbnails styles
 
   // Fullscreen Image Viewer
   imageViewerBackdrop: {

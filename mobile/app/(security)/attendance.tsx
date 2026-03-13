@@ -1,45 +1,47 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
 import QRCode from "react-native-qrcode-svg";
-import { generateQr } from "../../src/services/attendance.service";
+import { TOTP } from "totp-generator";
+
+// 🚨 CRITICAL: This must exactly match the GATE_TOTP_SECRET in your backend .env
+const GATE_SECRET = "HABITATHOSTELSUPERSECRETKEY22222";
 
 export default function GatePassScanner() {
   const [qrValue, setQrValue] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(5); // For the countdown timer UI
-
-  // Function to fetch a new unique token from your backend
-  const fetchNewQr = async () => {
-    try {
-      // This hits the Redis logic we wrote earlier
-      const response = await generateQr();
-      setQrValue(response.data.token);
-      setTimeLeft(5); // Reset countdown
-      setLoading(false);
-    } catch (error) {
-      console.error("Failed to fetch QR", error);
-    }
-  };
+  const [timeLeft, setTimeLeft] = useState(10);
 
   useEffect(() => {
-    // 1. Fetch immediately on load
-    fetchNewQr();
+    // 1. Math-based generation (Zero internet required)
+    const generateOfflineQr = async () => {
+      try {
+        // 🚨 Notice we added 'await' and destructured { otp }
+        const { otp } = await TOTP.generate(GATE_SECRET, {
+          digits: 6,
+          period: 10,
+        });
+        setQrValue(otp);
+      } catch (error) {
+        console.error("Failed to generate TOTP", error);
+      }
+    };
 
-    // 2. Set up the "Polling" interval (Every 5 seconds)
+    // Generate the first code immediately
+    generateOfflineQr();
+
+    // 2. Sync timer with the real-world clock
     const intervalId = setInterval(() => {
-      fetchNewQr();
-    }, 5000);
+      const currentSecond = new Date().getSeconds();
+      const remaining = 10 - (currentSecond % 10);
 
-    // 3. Optional: Countdown timer for visual flair
-    const timerId = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimeLeft(remaining);
+
+      // When the clock hits exactly a 10-second mark, generate the new code
+      if (remaining === 10) {
+        generateOfflineQr();
+      }
     }, 1000);
 
-    // Cleanup when screen closes
-    return () => {
-      clearInterval(intervalId);
-      clearInterval(timerId);
-    };
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
@@ -48,7 +50,7 @@ export default function GatePassScanner() {
       <Text style={styles.subTitle}>Scan this to mark In/Out</Text>
 
       <View style={styles.qrContainer}>
-        {loading ? (
+        {!qrValue ? (
           <ActivityIndicator size="large" color="#2563EB" />
         ) : (
           <QRCode
@@ -66,9 +68,13 @@ export default function GatePassScanner() {
       <View style={styles.timerContainer}>
         <Text style={styles.timerText}>Refreshing in {timeLeft}s...</Text>
         <View
-          style={[styles.progressBar, { width: `${(timeLeft / 5) * 100}%` }]}
+          style={[styles.progressBar, { width: `${(timeLeft / 10) * 100}%` }]}
         />
       </View>
+
+      <Text style={{ textAlign: "center", color: "gray", marginTop: 20 }}>
+        Offline Generation Active
+      </Text>
     </View>
   );
 }

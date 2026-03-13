@@ -6,6 +6,7 @@ import {
   optOutForMeal,
   scanMessQr,
   createDailyMenu,
+  getWastageAnalytics,
 } from "./smartMess.service";
 import { db } from "../../db";
 import { messMenu } from "../../db/schema";
@@ -118,5 +119,22 @@ export const optOutController = async (req: Authenticate, res: Response) => {
     res.json(result);
   } catch (error: any) {
     res.status(400).json({ message: error.message || "Opt-out failed" });
+  }
+};
+
+// 6. Wastage Analytics
+export const getWastageAnalyticsController = async (
+  req: Authenticate,
+  res: Response,
+) => {
+  try {
+    if (!req.user?.hostelId)
+      return res.status(400).json({ message: "Hostel ID missing" });
+
+    const analytics = await getWastageAnalytics(req.user.hostelId);
+    res.json(analytics);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch wastage analytics" });
   }
 };

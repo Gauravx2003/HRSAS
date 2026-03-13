@@ -1,10 +1,18 @@
+import React, { useEffect, useRef } from "react";
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Platform } from "react-native";
+import { Platform, AppState } from "react-native";
+import { useOfflineSyncEngine } from "@/hooks/useOfflineSyncEngine";
 
-export default function ResidentLayout() {
+// ─── MAIN LAYOUT COMPONENT ───
+export default function GuardLayout() {
+  // (You had it named ResidentLayout, but it's the guard's view!)
   const insets = useSafeAreaInsets();
+
+  // 🚨 TRIGGER THE ENGINE HERE
+  // It will sit quietly in the background on all tabs
+  useOfflineSyncEngine();
 
   return (
     <Tabs
@@ -39,7 +47,7 @@ export default function ResidentLayout() {
         }}
       />
 
-      {/* 2. MESS (Visible) */}
+      {/* 2. ATTENDANCE (Visible) */}
       <Tabs.Screen
         name="attendance"
         options={{
@@ -50,7 +58,7 @@ export default function ResidentLayout() {
         }}
       />
 
-      {/* 3. MENU POSTING (Visible) */}
+      {/* 3. MESS MENU (Visible) */}
       <Tabs.Screen
         name="mess"
         options={{

@@ -35,6 +35,8 @@ import marketplaceRouter from "./modules/facilities/marketplace/marketplace.rout
 import marketplaceAttachmentRoutes from "./modules/facilities/marketplace/marketplaceAttachment.routes";
 import { startLibraryCron } from "./jobs/library.job";
 import { startOrchestratorCron } from "./jobs/orchestrator.job";
+import communitiesRoutes from "./modules/communication/communities/communities.routes";
+import communitiesAttachmentsRoutes from "./modules/communication/communities/communitiesAttachments.routes";
 
 const app = express();
 
@@ -77,6 +79,8 @@ app.use("/api/orchestrator", orchestratorRoutes);
 app.use("/api/infrastructure", infrastructureRoutes);
 app.use("/api/marketplace", marketplaceRouter);
 app.use("/api/marketplace", marketplaceAttachmentRoutes);
+app.use("/api/communities", communitiesRoutes);
+app.use("/api/communities", communitiesAttachmentsRoutes);
 
 const PORT = process.env.PORT || 5000;
 

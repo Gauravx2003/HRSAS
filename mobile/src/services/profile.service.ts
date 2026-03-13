@@ -11,6 +11,7 @@ export interface Profile {
   roomNumber: string;
   roomType: string;
   role: string;
+  isActive: boolean;
   createdAt?: Date;
   department?: string;
   departmentId?: string;

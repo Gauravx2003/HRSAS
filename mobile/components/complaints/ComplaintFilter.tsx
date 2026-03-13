@@ -16,7 +16,14 @@ interface ComplaintFilterProps {
 export function ComplaintFilter({
   filter,
   setFilter,
-  options = ["ALL", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "ESCALATED"],
+  options = [
+    "ALL",
+    "ASSIGNED",
+    "IN_PROGRESS",
+    "RESOLVED",
+    "ESCALATED",
+    "CLOSED",
+  ],
 }: ComplaintFilterProps) {
   return (
     <View>
@@ -31,7 +38,10 @@ export function ComplaintFilter({
             key={status}
             style={[
               styles.filterChip,
-              filter === status && styles.filterChipActive,
+              filter === status &&
+                (options.includes("OPEN")
+                  ? styles.messFilterChipActive
+                  : styles.filterChipActive),
             ]}
             onPress={() => setFilter(status)}
           >
@@ -68,9 +78,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
+
   filterChipActive: {
     backgroundColor: "#4F46E5",
     borderColor: "#4F46E5",
+  },
+  messFilterChipActive: {
+    backgroundColor: "#B91C1C",
+    borderColor: "#B91C1C",
   },
   filterText: {
     fontSize: 14,

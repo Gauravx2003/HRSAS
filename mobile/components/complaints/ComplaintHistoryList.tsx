@@ -36,9 +36,9 @@ interface Props {
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   CREATED: { bg: "#F3F4F6", text: "#6B7280" },
   ASSIGNED: { bg: "#E0E7FF", text: "#4338CA" },
-  IN_PROGRESS: { bg: "#DBEAFE", text: "#1E40AF" },
+  IN_PROGRESS: { bg: "#FEF3C7", text: "#D97706" },
   RESOLVED: { bg: "#DCFCE7", text: "#15803D" },
-  CLOSED: { bg: "#D1FAE5", text: "#065F46" },
+  CLOSED: { bg: "#F1F5F9", text: "#475569" },
   ESCALATED: { bg: "#FEE2E2", text: "#B91C1C" },
   REJECTED: { bg: "#FEE2E2", text: "#B91C1C" },
   PENDING: { bg: "#FEF9C3", text: "#854D0E" },
@@ -72,7 +72,7 @@ export function ComplaintHistoryList({
   onClose,
   onReject,
 }: Props) {
-  const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [viewerImages, setViewerImages] = useState<any[] | null>(null);
   const [filter, setFilter] = useState<string>("ALL");
 
   // Status history modal
@@ -103,14 +103,44 @@ export function ComplaintHistoryList({
   };
 
   const formatDate = (iso: string) => {
-    const d = new Date(iso);
+    // 1. Only replace the space. Do NOT add 'Z' since your DB includes '+05:30'
+    const safeIso = iso.replace(" ", "T");
+    const d = new Date(safeIso);
+
     return d.toLocaleDateString("en-IN", {
+      // 2. Removed timeZone: "UTC" so the phone displays local IST time
       day: "numeric",
       month: "short",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const formatCardDate = (iso: string, status: string) => {
+    // 1. Safety check: Replace space with 'T' and ensure it ends with 'Z' so iOS doesn't crash
+    const safeIso = iso.replace(" ", "T") + (iso.endsWith("Z") ? "" : "Z");
+    const d = new Date(safeIso);
+
+    // 2. Force the timezone to UTC so it ignores the +5:30 IST shift
+    const dateStr = d.toLocaleDateString("en-IN", {
+      timeZone: "UTC",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    const timeStr = d.toLocaleTimeString("en-IN", {
+      timeZone: "UTC",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    let prefix = "Filed on";
+    if (status === "RESOLVED") prefix = "Resolved on";
+    if (status === "CLOSED") prefix = "Closed on";
+
+    return `${prefix} ${dateStr} • ${timeStr}`;
   };
 
   const formatStatus = (s: string) =>
@@ -137,17 +167,21 @@ export function ComplaintHistoryList({
       );
     }
 
-    // 1. Sort historyData by changedAt (Ascending)
-    const sortedHistory = [...historyData].sort((a, b) => {
-      return new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime();
+    // 1. Trust backend order, but add a tie-breaker for identical timestamps
+    const linearHistory = [...historyData].sort((a, b) => {
+      if (a.changedAt === b.changedAt) {
+        if (a.newStatus === "CREATED") return -1;
+        if (b.newStatus === "CREATED") return 1;
+      }
+      return 0; // Preserve backend order for everything else
     });
 
     // 2. Build nodes: "CREATED" initial + each transition's newStatus
-    const initialNode = sortedHistory[0]?.oldStatus
+    const initialNode = linearHistory[0]?.oldStatus
       ? [
           {
-            status: sortedHistory[0].oldStatus,
-            changedAt: null as string | null,
+            status: linearHistory[0].oldStatus,
+            changedAt: linearHistory[0].changedAt, // 👈 FIX: Now shows time for initial node
             changedBy: null as string | null,
             changedByName: null as string | null,
             changedToName: null as string | null,
@@ -158,7 +192,7 @@ export function ComplaintHistoryList({
 
     const nodes = [
       ...initialNode,
-      ...sortedHistory.map((entry) => ({
+      ...linearHistory.map((entry) => ({
         status: entry.newStatus,
         changedAt: entry.changedAt,
         changedBy: entry.changedBy,
@@ -281,50 +315,82 @@ export function ComplaintHistoryList({
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.catBadge}>
-                <Text className="font-sn-pro-bold" style={styles.catText}>
-                  {item.categoryName || "Issue"}
+            <View style={styles.cardTopRow}>
+              <View style={styles.cardInfoCol}>
+                <View style={styles.badgeRow}>
+                  <View style={styles.catBadge}>
+                    <Text className="font-sn-pro-bold" style={styles.catText}>
+                      {item.categoryName || "Issue"}
+                    </Text>
+                  </View>
+                  <StatusBadge status={item.status} />
+                </View>
+                <Text className="font-sn-pro-bold" style={styles.cardTitle}>
+                  {item.title}
+                </Text>
+                <Text
+                  className="font-sn-pro-regular"
+                  style={styles.cardDesc}
+                  numberOfLines={2}
+                >
+                  {item.description}
                 </Text>
               </View>
-              <StatusBadge status={item.status} />
+              {item.attachments && item.attachments.length > 0 && (
+                <View style={styles.cardImageCol}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setViewerImages(item.attachments || null);
+                    }}
+                    style={styles.stackPreviewContainer}
+                  >
+                    {item.attachments.slice(0, 3).map((att, i, arr) => (
+                      <Image
+                        key={att.id}
+                        source={{ uri: att.fileURL }}
+                        style={[
+                          styles.stackImage,
+                          { zIndex: 10 - i, top: i * 4, left: i * 4 },
+                        ]}
+                      />
+                    ))}
+                    {item.attachments.length > 1 && (
+                      <View
+                        style={[
+                          styles.stackImage,
+                          {
+                            zIndex: 11,
+                            top: 0,
+                            left: 0,
+                            backgroundColor: "rgba(0,0,0,0.4)",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={{
+                            color: "white",
+                            fontWeight: "bold",
+                            fontSize: 16,
+                          }}
+                        >
+                          +{item.attachments.length - 1}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
-            <Text className="font-sn-pro-bold" style={styles.cardTitle}>
-              {item.title}
-            </Text>
-            <Text style={styles.cardDate}>
-              {new Date(item.createdAt).toLocaleDateString()}
-            </Text>
-            <Text
-              className="font-sn-pro-regular"
-              //numberOfLines={2}
-              style={styles.cardDesc}
-            >
-              {item.description}
-            </Text>
-
-            {/* Attachment Thumbnails */}
-            {item.attachments && item.attachments.length > 0 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.attachmentRow}
-              >
-                {item.attachments.map((att) => (
-                  <TouchableOpacity
-                    key={att.id}
-                    onPress={() => setViewerImage(att.fileURL)}
-                    activeOpacity={0.85}
-                  >
-                    <Image
-                      source={{ uri: att.fileURL }}
-                      style={styles.attachmentThumb}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
+            <View style={styles.dateRow}>
+              <Feather name="calendar" size={12} color="#9CA3AF" />
+              <Text style={styles.cardDateText}>
+                {formatCardDate(item.createdAt, item.status)}
+              </Text>
+            </View>
 
             {item.staffName && (
               <Text className="font-sn-pro-medium" style={styles.assignedText}>
@@ -332,79 +398,104 @@ export function ComplaintHistoryList({
               </Text>
             )}
 
-            <View style={styles.buttonRow}>
-              {/* View History Button */}
-              <TouchableOpacity
-                style={styles.actionLinkBtn}
-                onPress={() => openHistory(item)}
-              >
-                <Feather name="git-commit" size={14} color="#4F46E5" />
-                <Text style={styles.actionLinkText}>View Timeline</Text>
-              </TouchableOpacity>
+            <View style={styles.actionsContainer}>
+              {/* ROW 1: Accept & Reject (Only shows when RESOLVED) */}
+              {item.status === "RESOLVED" && (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={styles.acceptBtn}
+                    onPress={() => onClose(item.id)}
+                  >
+                    <Feather name="check" size={16} color="white" />
+                    <Text style={styles.acceptBtnText}>Accept</Text>
+                  </TouchableOpacity>
 
-              {/* Chat Button */}
-              {item.status != "CREATED" && (
-                <TouchableOpacity
-                  style={styles.actionLinkBtn}
-                  onPress={() => {
-                    setChatComplaintId(item.id);
-                    setChatComplaintTitle(item.title);
-                    setChatModalVisible(true);
-                    setStaff(item.staffName || "Staff not assigned");
-                  }}
-                >
-                  <Feather name="message-circle" size={14} color="#4F46E5" />
-                  <Text style={styles.actionLinkText}>Chat</Text>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.rejectBtn}
+                    onPress={() => onReject(item.id)}
+                  >
+                    <Feather name="x" size={16} color="#B91C1C" />
+                    <Text style={styles.rejectBtnText}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
               )}
-            </View>
 
-            {/* Action buttons only for RESOLVED complaints */}
-            {item.status === "RESOLVED" && (
-              <View style={styles.actionRow}>
+              {/* ROW 2: Timeline & Chat */}
+              <View
+                style={[
+                  styles.actionRow,
+                  { marginTop: item.status === "RESOLVED" ? 12 : 0 },
+                ]}
+              >
                 <TouchableOpacity
-                  style={styles.acceptBtn}
-                  onPress={() => onClose(item.id)}
+                  style={styles.timelineListBtn}
+                  onPress={() => openHistory(item)}
                 >
-                  <Text style={styles.acceptBtnText}>Accept & Close</Text>
+                  <Feather name="activity" size={16} color="white" />
+                  <Text style={styles.timelineListBtnText}>Timeline</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.rejectBtn}
-                  onPress={() => onReject(item.id)}
-                >
-                  <Text style={styles.rejectBtnText}>Reject</Text>
-                </TouchableOpacity>
+
+                {["ASSIGNED", "IN_PROGRESS", "RESOLVED"].includes(
+                  item.status,
+                ) && (
+                  <TouchableOpacity
+                    style={styles.chatIconBtn}
+                    onPress={() => {
+                      setChatComplaintId(item.id);
+                      setChatComplaintTitle(item.title);
+                      setChatModalVisible(true);
+                      setStaff(item.staffName || "Staff not assigned");
+                    }}
+                  >
+                    <Feather name="message-square" size={20} color="white" />
+                  </TouchableOpacity>
+                )}
               </View>
-            )}
+            </View>
           </View>
         )}
       />
 
       {/* Fullscreen Image Viewer */}
       <Modal
-        visible={!!viewerImage}
+        visible={!!viewerImages}
         transparent
         animationType="fade"
-        onRequestClose={() => setViewerImage(null)}
+        onRequestClose={() => setViewerImages(null)}
       >
-        <Pressable
-          style={styles.imageViewerBackdrop}
-          onPress={() => setViewerImage(null)}
-        >
+        <View style={styles.imageViewerBackdrop}>
           <TouchableOpacity
             style={styles.imageViewerClose}
-            onPress={() => setViewerImage(null)}
+            onPress={() => setViewerImages(null)}
           >
             <Feather name="x" size={24} color="white" />
           </TouchableOpacity>
-          {viewerImage && (
-            <Image
-              source={{ uri: viewerImage }}
-              style={styles.imageViewerFull}
-              resizeMode="contain"
+          {viewerImages && (
+            <FlatList
+              data={viewerImages}
+              keyExtractor={(item, index) => item.id || index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View
+                  style={{
+                    width,
+                    height: screenHeight,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.fileURL }}
+                    style={styles.imageViewerFull}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
             />
           )}
-        </Pressable>
+        </View>
       </Modal>
 
       {/* Status History Modal */}
@@ -462,65 +553,107 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F3F4F6",
   },
-  cardHeader: {
+  cardTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  cardInfoCol: {
+    flex: 1,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
     marginBottom: 8,
   },
   catBadge: {
-    backgroundColor: "#EFF6FF",
-    paddingHorizontal: 8,
+    backgroundColor: "#F3E8FF",
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
   },
   catText: {
-    color: "#2563EB",
+    color: "#7E22CE",
     fontSize: 10,
     fontWeight: "700",
     textTransform: "uppercase",
   },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 10, fontWeight: "700" },
-  cardTitle: { fontSize: 16, fontWeight: "600", color: "#111827" },
-  cardDate: { fontSize: 12, color: "#9CA3AF", marginTop: 4 },
-  cardDesc: { color: "#6B7280", marginTop: 4, fontSize: 13 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  cardDesc: { color: "#6B7280", marginTop: 2, fontSize: 13, lineHeight: 18 },
+  cardImageCol: {
+    width: 68,
+    height: 68,
+  },
+  stackPreviewContainer: {
+    width: 68,
+    height: 68,
+  },
+  stackImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    position: "absolute",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+  },
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+  },
+  cardDateText: {
+    fontSize: 12,
+    color: "#64748B",
+  },
   assignedText: {
     fontSize: 12,
     color: "#059669",
     marginTop: 8,
-    fontWeight: "500",
-  },
-
-  buttonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    marginTop: 10,
-  },
-  actionLinkBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 4,
-  },
-  actionLinkText: {
-    fontSize: 13,
-    color: "#4F46E5",
     fontWeight: "600",
   },
-
-  // Attachment Thumbnails
-  attachmentRow: {
+  bottomActionRow: {
+    flexDirection: "row",
+    marginTop: 16,
+    gap: 12,
+  },
+  actionsContainer: {
+    marginTop: 12, // Gives some space between the text/content and the buttons
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between", // Pushes buttons to opposite sides. Use "flex-start" with a 'gap' if you want them next to each other
+    gap: 12, // Adds space between buttons if they sit next to each other
+  },
+  timelineListBtn: {
+    flex: 1,
+    backgroundColor: "#4F46E5",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
     flexDirection: "row",
     gap: 8,
-    marginTop: 10,
-    paddingBottom: 4,
   },
-  attachmentThumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 10,
-    backgroundColor: "#F1F5F9",
+  timelineListBtnText: { color: "white", fontWeight: "600", fontSize: 14 },
+  chatIconBtn: {
+    backgroundColor: "#6D28D9",
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   // Fullscreen Image Viewer
@@ -543,25 +676,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  actionRow: { flexDirection: "row", marginTop: 12, gap: 10 },
   acceptBtn: {
     flex: 1,
     backgroundColor: "#059669",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
-  acceptBtnText: { color: "white", fontWeight: "600", fontSize: 13 },
+  acceptBtnText: { color: "white", fontWeight: "600", fontSize: 14 },
   rejectBtn: {
     flex: 1,
     backgroundColor: "#FEE2E2",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: "#FECACA",
+    flexDirection: "row",
+    gap: 8,
   },
-  rejectBtnText: { color: "#B91C1C", fontWeight: "600", fontSize: 13 },
+  rejectBtnText: { color: "#B91C1C", fontWeight: "600", fontSize: 14 },
 
   // Status History Modal
   historyModalOverlay: {

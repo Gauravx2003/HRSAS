@@ -19,7 +19,7 @@ const EventModal: React.FC<EventModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -58,7 +58,8 @@ const EventModal: React.FC<EventModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    // 🚨 FIX: Change to setLoading
+    setLoading(true);
 
     try {
       let response;
@@ -93,7 +94,7 @@ const EventModal: React.FC<EventModalProps> = ({
     } catch (error) {
       console.error("Failed to save event", error);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 

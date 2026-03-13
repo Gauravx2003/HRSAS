@@ -9,6 +9,9 @@ import {
   RefreshControl,
   Alert,
   ScrollView,
+  Image,
+  Modal,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
@@ -27,6 +30,7 @@ export default function WorkScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [complainee, setComplainee] = useState("");
   const [filter, setFilter] = useState<
     "ALL" | "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED"
   >("ALL");
@@ -37,6 +41,9 @@ export default function WorkScreen() {
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [chatComplaintId, setChatComplaintId] = useState("");
   const [chatComplaintTitle, setChatComplaintTitle] = useState("");
+
+  // Fullscreen Image Viewer
+  const [viewerImages, setViewerImages] = useState<any[] | null>(null);
 
   const fetchData = async () => {
     try {
@@ -97,18 +104,14 @@ export default function WorkScreen() {
 
     return (
       <View style={[styles.card, isEscalated && styles.cardEscalated]}>
-        {/* Header */}
-        <View style={styles.cardHeader}>
-          <View style={{ flex: 1 }}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 4,
-              }}
-            >
-              <Text style={styles.cardId}>#{item.id.slice(0, 8)}</Text>
+        <View style={styles.cardTopRow}>
+          <View style={styles.cardInfoCol}>
+            <View style={styles.badgeRow}>
+              <View style={styles.catBadge}>
+                <Text className="font-sn-pro-bold" style={styles.catText}>
+                  {item.category || "Issue"}
+                </Text>
+              </View>
               <View
                 style={[
                   styles.badge,
@@ -140,36 +143,100 @@ export default function WorkScreen() {
                   {item.status}
                 </Text>
               </View>
+              <View
+                style={[
+                  styles.priorityBadge,
+                  item.priority === "HIGH"
+                    ? styles.bgRed
+                    : item.priority === "MEDIUM"
+                      ? styles.bgYellow
+                      : styles.bgGreen,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.priorityText,
+                    item.priority === "HIGH"
+                      ? styles.textRed
+                      : item.priority === "MEDIUM"
+                        ? styles.textYellow
+                        : styles.textGreen,
+                  ]}
+                >
+                  {item.priority}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-          </View>
-          <View
-            style={[
-              styles.priorityBadge,
-              item.priority === "HIGH"
-                ? styles.bgRed
-                : item.priority === "MEDIUM"
-                  ? styles.bgYellow
-                  : styles.bgGreen,
-            ]}
-          >
-            <Text
-              style={[
-                styles.priorityText,
-                item.priority === "HIGH"
-                  ? styles.textRed
-                  : item.priority === "MEDIUM"
-                    ? styles.textYellow
-                    : styles.textGreen,
-              ]}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 4,
+              }}
             >
-              {item.priority}
+              <Text style={styles.cardId}>#{item.id.slice(0, 8)}</Text>
+            </View>
+
+            <Text className="font-sn-pro-bold" style={styles.cardTitle}>
+              {item.title}
+            </Text>
+            <Text
+              className="font-sn-pro-regular"
+              style={styles.cardDesc}
+              numberOfLines={2}
+            >
+              {item.description}
             </Text>
           </View>
+          {item.attachments && item.attachments.length > 0 && (
+            <View style={styles.cardImageCol}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  setViewerImages(item.attachments || null);
+                }}
+                style={styles.stackPreviewContainer}
+              >
+                {item.attachments.slice(0, 3).map((att, i, arr) => (
+                  <Image
+                    key={att.id}
+                    source={{ uri: att.fileURL }}
+                    style={[
+                      styles.stackImage,
+                      { zIndex: 10 - i, top: i * 4, left: i * 4 },
+                    ]}
+                  />
+                ))}
+                {item.attachments.length > 1 && (
+                  <View
+                    style={[
+                      styles.stackImage,
+                      {
+                        zIndex: 11,
+                        top: 0,
+                        left: 0,
+                        backgroundColor: "rgba(0,0,0,0.4)",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "bold",
+                        fontSize: 16,
+                      }}
+                    >
+                      +{item.attachments.length - 1}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-
-        {/* Content */}
-        <Text style={styles.cardDesc}>{item.description}</Text>
 
         <View>
           <View style={styles.infoRow}>
@@ -203,7 +270,6 @@ export default function WorkScreen() {
             </>
           </View>
         </View>
-
         {/* Actions */}
         <View style={styles.actionContainer}>
           {item.status === "ASSIGNED" && (
@@ -256,19 +322,21 @@ export default function WorkScreen() {
             </View>
           )}
         </View>
-
         {/* Chat Button for Staff */}
-        <TouchableOpacity
-          style={styles.chatActionBtn}
-          onPress={() => {
-            setChatComplaintId(item.id);
-            setChatComplaintTitle(item.title);
-            setChatModalVisible(true);
-          }}
-        >
-          <Feather name="message-circle" size={16} color="#4F46E5" />
-          <Text style={styles.chatActionText}>Open Chat / Comments</Text>
-        </TouchableOpacity>
+        {item.status !== "ESCALATED" && item.status !== "CLOSED" && (
+          <TouchableOpacity
+            style={styles.chatActionBtn}
+            onPress={() => {
+              setChatComplaintId(item.id);
+              setChatComplaintTitle(item.title);
+              setComplainee(item.name);
+              setChatModalVisible(true);
+            }}
+          >
+            <Feather name="message-circle" size={16} color="white" />
+            <Text style={styles.chatActionText}>Open Chat</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -305,7 +373,7 @@ export default function WorkScreen() {
         data={complaints}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ padding: 5, paddingBottom: 100 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -319,11 +387,54 @@ export default function WorkScreen() {
         }
       />
 
+      {/* Fullscreen Image Viewer */}
+      <Modal
+        visible={!!viewerImages}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewerImages(null)}
+      >
+        <View style={styles.imageViewerBackdrop}>
+          <TouchableOpacity
+            style={styles.imageViewerClose}
+            onPress={() => setViewerImages(null)}
+          >
+            <Feather name="x" size={24} color="white" />
+          </TouchableOpacity>
+          {viewerImages && (
+            <FlatList
+              data={viewerImages}
+              keyExtractor={(item, index) => item.id || index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View
+                  style={{
+                    width: Dimensions.get("window").width,
+                    height: Dimensions.get("window").height,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <Image
+                    source={{ uri: item.fileURL }}
+                    style={styles.imageViewerFull}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
+
       {/* Chat Modal */}
       <ComplaintChatModal
         visible={chatModalVisible}
         complaintId={chatComplaintId}
         complaintTitle={chatComplaintTitle}
+        staff={complainee}
         onClose={() => setChatModalVisible(false)}
       />
     </SafeAreaView>
@@ -340,34 +451,73 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 26, color: "#111827" },
 
+  // Staff Complaints Card Layout Matches ComplaintHistoryList
   card: {
     backgroundColor: "white",
-    borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    borderRadius: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "transparent",
+    borderColor: "#F3F4F6",
   },
   cardEscalated: { borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
-
-  cardHeader: {
+  cardTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    gap: 12,
+  },
+  cardInfoCol: {
+    flex: 1,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 8,
+  },
+  catBadge: {
+    backgroundColor: "#F3E8FF",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  catText: {
+    color: "#7E22CE",
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
   cardId: { fontSize: 12, color: "#9CA3AF", fontFamily: "monospace" },
-  cardTitle: { fontSize: 16, fontWeight: "bold", color: "#111827" },
-
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
   cardDesc: {
-    fontSize: 14,
-    color: "#4B5563",
+    color: "#6B7280",
+    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 18,
     marginBottom: 16,
-    lineHeight: 20,
+  },
+  cardImageCol: {
+    width: 68,
+    height: 68,
+  },
+  stackPreviewContainer: {
+    width: 68,
+    height: 68,
+  },
+  stackImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    position: "absolute",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
   },
 
   infoRow: {
@@ -428,15 +578,35 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
     paddingVertical: 12,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: "#4F46E5",
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#BFDBFE",
   },
-  chatActionText: { color: "#4F46E5", fontWeight: "600", fontSize: 14 },
+  chatActionText: { color: "white", fontWeight: "600", fontSize: 14 },
 
   emptyState: { alignItems: "center", marginTop: 60 },
   emptyText: { color: "#9CA3AF", marginTop: 16, fontSize: 16 },
+
+  // Fullscreen Image Viewer
+  imageViewerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageViewerClose: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  imageViewerFull: {
+    width: Dimensions.get("window").width - 32,
+    height: Dimensions.get("window").width - 32,
+    borderRadius: 12,
+  },
 
   // Badges
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },

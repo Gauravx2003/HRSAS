@@ -14,6 +14,10 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { markAttendance } from "@/src/services/attendance.service";
+import { RootState } from "@/src/store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUser } from "@/src/store/authSlice";
+import * as SecureStore from "expo-secure-store";
 
 export default function AttendanceScanner() {
   const router = useRouter();
@@ -24,6 +28,9 @@ export default function AttendanceScanner() {
     null,
   );
   const isFocused = useIsFocused();
+
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.auth.user);
 
   useEffect(() => {
     if (isFocused) {
@@ -93,10 +100,23 @@ export default function AttendanceScanner() {
 
       console.log(`Scanned: ${data}`);
 
-      // 2. Send to Backend
+      // 1. Send to Backend
       const response = await markAttendance(data);
+      const message = response.data.message;
 
-      // 3. Success UI
+      // 2. Determine the new status from the backend message
+      const isNowInside = message.includes("IN");
+
+      // 3. Update Redux globally
+      if (user) {
+        const updatedUser = { ...user, isActive: isNowInside };
+        dispatch(updateUser(updatedUser));
+
+        // 4. Keep local storage in sync so it survives app restarts
+        await SecureStore.setItemAsync("user", JSON.stringify(updatedUser));
+      }
+
+      // 5. Success UI
       Alert.alert(
         "Attendance Marked! ✅",
         response.data.message ||

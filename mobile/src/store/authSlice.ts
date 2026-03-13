@@ -7,6 +7,7 @@ export interface User {
   email: string;
   role: string;
   hostelId: string;
+  isActive: boolean;
   blockId?: string;
   blockName?: string;
   roomId?: string;

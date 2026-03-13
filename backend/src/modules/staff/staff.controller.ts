@@ -33,6 +33,8 @@ export const getAssignedComplaintsController = async (
       req.user!.userId,
       status as "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED",
     );
+
+    //console.log(conplaints);
     return res.status(200).json(conplaints);
   } catch (error) {
     console.error(error);

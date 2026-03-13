@@ -30,6 +30,8 @@ import {
 } from "../../src/services/library.service";
 import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/src/store/store";
 
 // Dummy Data
 const getPlanDisplayInfo = (plan: Plan) => {
@@ -113,6 +115,10 @@ export default function LibraryScreen() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [allPhysicalBooks, setAllPhysicalBooks] = useState<LibraryBook[]>([]);
   const settingsAnim = useRef(new Animated.Value(0)).current;
+
+  const user = useSelector((state: RootState) => state.auth.user);
+
+ 
 
   const openSettings = () => {
     setShowSettingsModal(true);
@@ -321,8 +327,10 @@ export default function LibraryScreen() {
           <View style={styles.cardTop}>
             <View>
               <Text style={styles.cardLabel}>HABITAT LIBRARY</Text>
-              <Text style={styles.cardName}>Gaurav Daware</Text>
-              <Text style={styles.cardId}>ID: 2022-CS-045</Text>
+              <Text style={styles.cardName}>{user?.name}</Text>
+              <Text style={styles.cardId}>
+                ID: {membership.id.slice(0, 11).toUpperCase()}
+              </Text>
             </View>
             <View
               style={[
@@ -444,82 +452,86 @@ export default function LibraryScreen() {
       transparent={true}
       onRequestClose={() => setShowPlanModal(false)}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Choose Your Plan</Text>
-            <TouchableOpacity onPress={() => setShowPlanModal(false)}>
-              <Feather name="x" size={24} color="#64748B" />
-            </TouchableOpacity>
-          </View>
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Choose Your Plan</Text>
+              <TouchableOpacity onPress={() => setShowPlanModal(false)}>
+                <Feather name="x" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {plans.map((item) => {
-              const displayInfo = getPlanDisplayInfo(item);
-              const plan = { ...item, ...displayInfo };
-              return (
-                <TouchableOpacity
-                  key={plan.id}
-                  style={[
-                    styles.planCard,
-                    selectedPlan?.id === plan.id && styles.planCardSelected,
-                  ]}
-                  onPress={() => setSelectedPlan(plan)}
-                >
-                  <View style={styles.planHeader}>
-                    <View>
-                      <View
-                        style={[
-                          styles.planTierBadge,
-                          {
-                            backgroundColor: plan.color + "20",
-                            borderColor: plan.color,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.planTierText, { color: plan.color }]}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {plans.map((item) => {
+                const displayInfo = getPlanDisplayInfo(item);
+                const plan = { ...item, ...displayInfo };
+                return (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[
+                      styles.planCard,
+                      selectedPlan?.id === plan.id && styles.planCardSelected,
+                    ]}
+                    onPress={() => setSelectedPlan(plan)}
+                  >
+                    <View style={styles.planHeader}>
+                      <View>
+                        <View
+                          style={[
+                            styles.planTierBadge,
+                            {
+                              backgroundColor: plan.color + "20",
+                              borderColor: plan.color,
+                            },
+                          ]}
                         >
-                          {plan.tier}
+                          <Text
+                            style={[styles.planTierText, { color: plan.color }]}
+                          >
+                            {plan.tier}
+                          </Text>
+                        </View>
+                        <Text style={styles.planName}>{plan.name}</Text>
+                      </View>
+                      <View style={styles.planPriceContainer}>
+                        <Text style={styles.planPrice}>₹{plan.price}</Text>
+                        <Text style={styles.planDuration}>
+                          /{plan.duration}
                         </Text>
                       </View>
-                      <Text style={styles.planName}>{plan.name}</Text>
                     </View>
-                    <View style={styles.planPriceContainer}>
-                      <Text style={styles.planPrice}>₹{plan.price}</Text>
-                      <Text style={styles.planDuration}>/{plan.duration}</Text>
+
+                    <View style={styles.planFeatures}>
+                      {plan.features.map((feature, idx) => (
+                        <View key={idx} style={styles.featureRow}>
+                          <Feather name="check" size={16} color="#22C55E" />
+                          <Text style={styles.featureText}>{feature}</Text>
+                        </View>
+                      ))}
                     </View>
-                  </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
 
-                  <View style={styles.planFeatures}>
-                    {plan.features.map((feature, idx) => (
-                      <View key={idx} style={styles.featureRow}>
-                        <Feather name="check" size={16} color="#22C55E" />
-                        <Text style={styles.featureText}>{feature}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          <TouchableOpacity
-            style={[
-              styles.subscribeBtn,
-              !selectedPlan && styles.subscribeBtnDisabled,
-            ]}
-            disabled={!selectedPlan}
-            onPress={handleSubscribe}
-          >
-            <Text style={styles.subscribeBtnText}>
-              {membership && membership.hasMembership
-                ? "Change Plan"
-                : "Subscribe Now"}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.subscribeBtn,
+                !selectedPlan && styles.subscribeBtnDisabled,
+              ]}
+              disabled={!selectedPlan}
+              onPress={handleSubscribe}
+            >
+              <Text style={styles.subscribeBtnText}>
+                {membership && membership.hasMembership
+                  ? "Change Plan"
+                  : "Subscribe Now"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 
@@ -892,6 +904,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 20,
     paddingTop: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
   },
   header: {
     flexDirection: "row",

@@ -108,12 +108,29 @@ export const createNoticeController = async (
       sendPushNotificationToAll(
         `🚨 URGENT: ${title}`,
         description.substring(0, 100), // Keep body short
+        {
+          route: "/(resident)/campus-hub",
+          params: { tab: "Notices" },
+        },
       );
     } else if (type === "ANNOUNCEMENT") {
       // Optional: Send softer notification for normal announcements
       sendPushNotificationToAll(
         `📢 New Notice: ${title}`,
         "Check the Campus Hub for details.",
+        {
+          route: "/(resident)/campus-hub",
+          params: { tab: "Notices" },
+        },
+      );
+    } else if (type === "SCHEDULE") {
+      sendPushNotificationToAll(
+        `📅 New Schedule: ${title}`,
+        "Check the Campus Hub for details.",
+        {
+          route: "/(resident)/campus-hub",
+          params: { tab: "Schedule" },
+        },
       );
     }
 

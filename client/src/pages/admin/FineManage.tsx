@@ -177,7 +177,7 @@ const FineManage = () => {
             </div>
             <div className="flex items-baseline gap-3 mt-2">
               <span className="text-3xl font-bold text-slate-900">
-                $
+                ₹
                 {totalCollected.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -199,7 +199,7 @@ const FineManage = () => {
             </div>
             <div className="flex items-baseline gap-3 mt-2">
               <span className="text-3xl font-bold text-slate-900">
-                $
+                ₹
                 {pendingAmount.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -342,7 +342,7 @@ const FineManage = () => {
                             payment.category.replace("_", " ")}
                         </td>
                         <td className="px-6 py-4 font-bold text-slate-900">
-                          ${payment.amount.toFixed(2)}
+                          ₹{payment.amount.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 text-slate-600">
                           {formatDate(payment.createdAt)}

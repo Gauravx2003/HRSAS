@@ -21,7 +21,8 @@ import MessCategoryPieChart from "../../components/messAnalytics/MessCategoryPie
 import MessCategoryTable from "../../components/messAnalytics/MessCategoryTable";
 
 import AdminContractorTab from "../../components/messAnalytics/AdminContractorTab";
-import { UserCog } from "lucide-react";
+import MessWastageStats from "../../components/messAnalytics/MessWastageStats";
+import { UserCog, Leaf } from "lucide-react";
 
 interface MessIssue {
   id: string;
@@ -41,18 +42,18 @@ interface MessIssue {
 const MessIssueManagement = () => {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<
-    "issues" | "analytics" | "contractor"
+    "issues" | "analytics" | "contractor" | "smart_mess"
   >("issues");
   const [issues, setIssues] = useState<MessIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<
     "ALL" | "OPEN" | "IN_REVIEW" | "RESOLVED" | "REJECTED"
   >("ALL");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Analytics state
   const [analytics, setAnalytics] = useState<any>(null);
+  const [wastageData, setWastageData] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // Sidepanel Modal State
@@ -63,7 +64,7 @@ const MessIssueManagement = () => {
 
   useEffect(() => {
     fetchIssues();
-  }, [filter, categoryFilter]);
+  }, [filter]);
 
   useEffect(() => {
     if (activeTab === "analytics" && !analytics) {
@@ -80,11 +81,11 @@ const MessIssueManagement = () => {
       const response = await api.get(endpoint.slice(0, -1));
       let fetchedIssues = response.data;
 
-      if (categoryFilter !== "ALL") {
-        fetchedIssues = fetchedIssues.filter(
-          (issue: MessIssue) => issue.category === categoryFilter,
-        );
-      }
+      // if (categoryFilter !== "ALL") {
+      //   fetchedIssues = fetchedIssues.filter(
+      //     (issue: MessIssue) => issue.category === categoryFilter,
+      //   );
+      // }
 
       setIssues(fetchedIssues);
     } catch (error) {
@@ -97,8 +98,12 @@ const MessIssueManagement = () => {
   const fetchAnalytics = async () => {
     try {
       setAnalyticsLoading(true);
-      const response = await api.get("/mess-issues/analytics");
-      setAnalytics(response.data);
+      const [analyticsRes, wastageRes] = await Promise.all([
+        api.get("/mess-issues/analytics"),
+        api.get("/smart-mess/analytics/wastage"),
+      ]);
+      setAnalytics(analyticsRes.data);
+      setWastageData(wastageRes.data);
     } catch (error) {
       console.error("Failed to fetch analytics:", error);
     } finally {
@@ -323,23 +328,47 @@ const MessIssueManagement = () => {
             <UserCog className="w-4 h-4" />
             Contractor
           </button>
+          <button
+            onClick={() => setActiveTab("smart_mess")}
+            className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-bold bg-white shadow-sm transition-colors ${activeTab === "smart_mess" ? "border-blue-500 text-blue-700" : "border-slate-200 text-slate-700"}`}
+          >
+            <Leaf className="w-4 h-4" />
+            Smart Mess
+          </button>
 
           <div className="h-6 w-px bg-slate-300 mx-1"></div>
 
-          <select
-            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold bg-white text-slate-700 shadow-sm appearance-none pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-size-[10px_10px] bg-no-repeat bg-position-[right_10px_center]"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
-          >
-            <option value="ALL">Status: All</option>
-            <option value="OPEN">Status: Open</option>
-            <option value="IN_REVIEW">Status: In Review</option>
-            <option value="RESOLVED">Status: Resolved</option>
-          </select>
+          {activeTab === "issues" && (
+            <select
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold bg-white text-slate-700 shadow-sm appearance-none pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-size-[10px_10px] bg-no-repeat bg-position-[right_10px_center]"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+            >
+              <option value="ALL">Status: All</option>
+              <option value="OPEN">Status: Open</option>
+              <option value="IN_REVIEW">Status: In Review</option>
+              <option value="RESOLVED">Status: Resolved</option>
+            </select>
+          )}
 
-          <select className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold bg-white text-slate-700 shadow-sm appearance-none pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-size-[10px_10px] bg-no-repeat bg-position-[right_10px_center]">
-            <option>Sort: Newest First</option>
-          </select>
+          {activeTab === "issues" && (
+            <select className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold bg-white text-slate-700 shadow-sm appearance-none pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-size-[10px_10px] bg-no-repeat bg-position-[right_10px_center]">
+              <option>Sort: Newest First</option>
+            </select>
+          )}
+
+          {activeTab === "issues" && (
+            <select
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold bg-white text-slate-700 shadow-sm appearance-none pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-size-[10px_10px] bg-no-repeat bg-position-[right_10px_center]"
+              id="categoryFilter"
+            >
+              <option value="ALL">Category: All</option>
+              <option value="FOOD_QUALITY">Food Quality</option>
+              <option value="HYGIENE">Hygiene</option>
+              <option value="SERVICE">Service</option>
+              <option value="OTHER">Other</option>
+            </select>
+          )}
         </div>
 
         {/* ─── CONTRACTOR TAB ─── */}
@@ -355,12 +384,27 @@ const MessIssueManagement = () => {
             <div className="space-y-6">
               <MessStatCards statusCounts={analytics.statusCounts} />
               <MessTrendChart dailyTrend={analytics.dailyTrend} />
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <MessCategoryPieChart data={analytics.categoryDistribution} />
                 <MessCategoryTable data={analytics.categoryDistribution} />
               </div>
             </div>
           ) : null)}
+
+        {/* Wastage Analytics Section */}
+        {activeTab === "smart_mess" && wastageData && (
+          <div className="mt-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-8 w-1 bg-green-500 rounded-full"></div>
+              <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <Leaf className="w-5 h-5 text-green-600" />
+                Food Wastage & Resource Efficiency
+              </h2>
+            </div>
+            <MessWastageStats data={wastageData} />
+          </div>
+        )}
 
         {/* ─── ISSUES TAB ─── */}
         {activeTab === "issues" && (

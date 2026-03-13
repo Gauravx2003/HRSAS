@@ -15,7 +15,7 @@ import {
   getReassignmentHistory,
 } from "./complaints.service";
 import { complaintStatusHistory, users } from "../../../db/schema";
-import { aliasedTable, eq, getTableColumns } from "drizzle-orm";
+import { aliasedTable, asc, eq, getTableColumns } from "drizzle-orm";
 import { db } from "../../../db";
 
 export const raiseComplaint = async (req: Authenticate, res: Response) => {
@@ -47,6 +47,7 @@ export const getMyComplaintsController = async (
 ) => {
   try {
     const myComplaints = await getMyComplaints(req.user!.userId);
+
     return res.status(200).json(myComplaints);
   } catch (error) {
     console.error(error);
@@ -176,7 +177,8 @@ export const getComplaintHistoryController = async (
       .from(complaintStatusHistory)
       .leftJoin(actors, eq(complaintStatusHistory.changedBy, actors.id))
       .leftJoin(targets, eq(complaintStatusHistory.changedTo, targets.id))
-      .where(eq(complaintStatusHistory.complaintId, id));
+      .where(eq(complaintStatusHistory.complaintId, id))
+      .orderBy(asc(complaintStatusHistory.changedAt));
 
     return res.status(200).json(complaintHistory);
   } catch (error) {

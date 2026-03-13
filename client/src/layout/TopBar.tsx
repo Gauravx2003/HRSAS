@@ -3,11 +3,14 @@ import { LogOut, Building2, User, Bell } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import type { LoggedInUser } from "../services/auth.service";
 import NotificationPanel from "../components/NotificationPanel";
+import { Logout } from "../services/auth.service";
 import {
   getMyNotifications,
   markNotificationAsRead,
   type Notification,
 } from "../services/notification.service";
+import { useDispatch } from "react-redux";
+import { logout } from "../store/slices/authSlice";
 
 const TopBar = () => {
   const navigate = useNavigate();
@@ -15,6 +18,9 @@ const TopBar = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+
+  //Initialize Dispatch
+  const dispatch = useDispatch();
 
   //console.log(user);
 
@@ -68,12 +74,19 @@ const TopBar = () => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
+  const log_out = async () => {
+    try {
+      // 1. Attempt to tell the backend to kill the session & push token
+      await Logout();
+    } catch (err) {
+      // 2. If it fails (e.g., token already expired), just log it and move on
+      console.error("Backend logout failed, forcing local logout", err);
+    } finally {
+      // 3. THIS ALWAYS RUNS. Wipe Redux, local storage, and redirect.
+      dispatch(logout());
+      navigate("/login");
+    }
   };
-
   const hasUnread = notifications.some((n) => !n.isRead);
 
   return (
@@ -141,7 +154,7 @@ const TopBar = () => {
             <div className="h-8 w-px bg-slate-200 hidden sm:block"></div>
 
             <button
-              onClick={logout}
+              onClick={log_out}
               className="group flex items-center space-x-2 px-3 py-2 rounded-lg text-slate-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
               title="Logout"
             >

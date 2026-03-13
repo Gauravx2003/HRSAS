@@ -57,7 +57,29 @@ export const loginUser = async (email: string, password: string) => {
     sessionId: sessionId,
   };
 
+  const offlineTokenPayload = {
+    userId: user.id,
+    name: user.name,
+    room: user.roomNumber,
+    block: user.blockName,
+  };
+
   const { accessToken, refreshToken } = generateTokens(tokenPayload);
+
+  let offlineToken: string | undefined = undefined;
+
+  if (user.role === "RESIDENT") {
+    const offlineTokenPayload = {
+      userId: user.id,
+      name: user.name,
+      room: user.roomNumber,
+      block: user.blockName,
+    };
+
+    offlineToken = jwt.sign(offlineTokenPayload, process.env.OFFLINE_SECRET!, {
+      expiresIn: "7d",
+    });
+  }
 
   const redisKey = `refresh_token:${user.id}:${sessionId}`;
   await redis.set(redisKey, refreshToken, "EX", 7 * 24 * 60 * 60);
@@ -74,10 +96,12 @@ export const loginUser = async (email: string, password: string) => {
       blockId: user.blockId,
       blockName: user.blockName,
       roomId: user.roomId,
+      isActive: user.isActive,
       roomNumber: user.roomNumber,
       organizationId: user.organizationId,
       profilePicUrl: user.profilePicUrl,
     },
+    ...(offlineToken && { offlineToken }),
   };
 };
 

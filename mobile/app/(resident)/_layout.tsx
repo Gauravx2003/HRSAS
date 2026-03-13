@@ -1,6 +1,9 @@
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 import { Platform } from "react-native";
 import {
   TabBarProvider,
@@ -61,6 +64,16 @@ export default function ResidentLayout() {
           title: "Help",
           tabBarIcon: ({ color }) => (
             <Feather name="life-buoy" size={24} color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="gym"
+        options={{
+          title: "Gym",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="fitness-center" size={24} color={color} />
           ),
         }}
       />

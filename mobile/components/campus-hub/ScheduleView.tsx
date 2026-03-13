@@ -93,9 +93,9 @@ export function ScheduleView({ schedule }: Props) {
               const displayColor = COLORS[index % COLORS.length];
 
               return (
-                <View key={item.id} className="flex-row mb-2">
+                <View key={item.id} className="flex-row mb-6">
                   {/* Left: Time */}
-                  <View className="w-20 items-end pr-4 pt-4 mt-2">
+                  <View className="w-15 items-end pr-4 pt-[10px]">
                     <Text className="text-xs font-bold text-gray-500">
                       {time}
                     </Text>
@@ -112,7 +112,7 @@ export function ScheduleView({ schedule }: Props) {
                         borderWidth: 1.5,
                         borderColor: displayColor,
                         backgroundColor: "white",
-                        marginTop: 9,
+                        marginTop: 3,
                         alignItems: "center",
                         justifyContent: "center",
                         zIndex: 10,
@@ -152,7 +152,7 @@ export function ScheduleView({ schedule }: Props) {
                       borderColor: "#F3F4F6",
                     }}
                   >
-                    <View className="flex-row items-center mb-1.5">
+                    <View className="flex-row items-center mb-3">
                       <View
                         className="h-8 w-8 rounded-lg items-center justify-center mr-3"
                         style={{
@@ -161,11 +161,11 @@ export function ScheduleView({ schedule }: Props) {
                       >
                         <Feather name="clock" size={16} color={displayColor} />
                       </View>
-                      <Text className="text-base font-bold text-gray-900">
+                      <Text className="text-lg font-bold text-gray-900">
                         {item.title}
                       </Text>
                     </View>
-                    <Text className="text-gray-400 text-sm ml-11">
+                    <Text className="text-gray-500 text-sm ml-11 leading-5">
                       {item.description}
                     </Text>
                   </View>

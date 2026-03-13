@@ -1,6 +1,6 @@
 import { db } from "../../db";
-import { messMenu, messAttendance } from "../../db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { messMenu, messAttendance, users } from "../../db/schema";
+import { eq, and, gte, lte, count, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 
 // 1. Fetch Menu for the Day
@@ -165,4 +165,129 @@ export const optOutForMeal = async (userId: string, menuId: string) => {
   }
 
   return { message: "Booking cancelled successfully" };
+};
+
+// 6. Wastage Analytics (Admin)
+export const getWastageAnalytics = async (hostelId: string) => {
+  // A. Get Total Residents count
+  const [residentCountData] = await db
+    .select({ total: count() })
+    .from(users)
+    .where(and(eq(users.hostelId, hostelId), eq(users.role, "RESIDENT")));
+
+  const totalResidents = Number(residentCountData?.total || 0);
+
+  // B. Get ONLY PAST Menus (Crucial: prevents future meals from showing 100% waste)
+  // Assuming messMenu.date is a Date object or ISO string.
+  const today = new Date();
+
+  const menus = await db
+    .select()
+    .from(messMenu)
+    .where(
+      and(
+        eq(messMenu.hostelId, hostelId),
+        lte(messMenu.date, today), // 🚨 Only fetch meals that have already happened!
+      ),
+    )
+    .orderBy(sql`${messMenu.date} DESC`)
+    .limit(30);
+
+  // Variables to hold the raw totals for accurate summary math
+  let totalPotentialMeals = 0;
+  let totalOptedInAllTime = 0;
+  let totalScannedAllTime = 0;
+
+  const analytics = await Promise.all(
+    menus.map(async (menu) => {
+      // Get Attendance stats for this specific meal
+      const attendanceStats = await db
+        .select({
+          status: messAttendance.status,
+          count: count(),
+        })
+        .from(messAttendance)
+        .where(
+          and(
+            eq(messAttendance.date, menu.date),
+            eq(messAttendance.mealType, menu.mealType),
+          ),
+        )
+        .groupBy(messAttendance.status);
+
+      // Parse the stats
+      let optedInButGhosted = 0;
+      let actuallyScanned = 0;
+
+      attendanceStats.forEach((stat) => {
+        if (stat.status === "OPTED_IN") optedInButGhosted = Number(stat.count);
+        if (stat.status === "SCANNED") actuallyScanned = Number(stat.count);
+      });
+
+      // The total amount of food the kitchen prepared for this meal
+      const totalPrepared = optedInButGhosted + actuallyScanned;
+
+      // 🚨 Accumulate raw numbers for the accurate Summary calculation
+      totalPotentialMeals += totalResidents;
+      totalOptedInAllTime += totalPrepared;
+      totalScannedAllTime += actuallyScanned;
+
+      // Metric A: App ROI (Food Saved before cooking)
+      const mealsSaved = totalResidents - totalPrepared;
+      const savedPercent =
+        totalResidents > 0 ? (mealsSaved / totalResidents) * 100 : 0;
+
+      // Metric B: Ghost Rate (Food Wasted after cooking)
+      const mealsWasted = totalPrepared - actuallyScanned;
+      const wastePercent =
+        totalPrepared > 0 ? (mealsWasted / totalPrepared) * 100 : 0;
+
+      // Metric C: Kitchen Efficiency
+      const efficiencyPercent =
+        totalPrepared > 0 ? (actuallyScanned / totalPrepared) * 100 : 0;
+
+      return {
+        id: menu.id,
+        date: menu.date,
+        mealType: menu.mealType,
+        items: menu.items,
+        totalResidents,
+        optedIn: totalPrepared,
+        scanned: actuallyScanned,
+        mealsSaved: Math.max(0, mealsSaved),
+        savedPercent: Math.round(savedPercent),
+        mealsWasted: Math.max(0, mealsWasted),
+        wastePercent: Math.round(wastePercent),
+        efficiencyPercent: Math.round(efficiencyPercent),
+      };
+    }),
+  );
+
+  // 🚨 Calculate the True Averages using the raw sums (The mathematically correct way)
+  const totalSavedAllTime = totalPotentialMeals - totalOptedInAllTime;
+  const totalWastedAllTime = totalOptedInAllTime - totalScannedAllTime;
+
+  const trueAverageSavings =
+    totalPotentialMeals > 0
+      ? (totalSavedAllTime / totalPotentialMeals) * 100
+      : 0;
+
+  const trueAverageWaste =
+    totalOptedInAllTime > 0
+      ? (totalWastedAllTime / totalOptedInAllTime) * 100
+      : 0;
+
+  const trueAverageEfficiency =
+    totalOptedInAllTime > 0
+      ? (totalScannedAllTime / totalOptedInAllTime) * 100
+      : 0;
+
+  return {
+    dailyStats: analytics,
+    summary: {
+      averageSavings: Math.round(trueAverageSavings),
+      averageWaste: Math.round(trueAverageWaste),
+      averageEfficiency: Math.round(trueAverageEfficiency),
+    },
+  };
 };

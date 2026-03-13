@@ -5,25 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function StaffLayout() {
   const insets = useSafeAreaInsets();
-  // screenOptions={{
-  //       headerShown: false,
-  //       tabBarActiveTintColor: "#2563EB",
-  //       tabBarInactiveTintColor: "#9CA3AF",
-  //       tabBarStyle: {
-  //         height: 60 + insets.bottom,
-  //         paddingTop: 10,
-  //         paddingBottom: Platform.OS === "android" ? insets.bottom + 10 : 20,
-  //         backgroundColor: "white",
-  //         borderTopWidth: 1,
-  //         borderTopColor: "#F3F4F6",
-  //         elevation: 0, // Removes Android shadow for a cleaner look
-  //       },
-  //       tabBarLabelStyle: {
-  //         fontSize: 12,
-  //         fontWeight: "600",
-  //         marginTop: -2,
-  //       },
-  //     }}
+  
   return (
     <Tabs
       screenOptions={{
