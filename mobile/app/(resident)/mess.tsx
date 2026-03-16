@@ -381,112 +381,126 @@ export default function MessScreen() {
             contentContainerStyle={{ paddingBottom: 100 }}
           >
             {/* Digital Coupon Card */}
-            <View style={styles.ticketCard}>
-              {targetMeal ? (
-                <>
-                  <View style={styles.ticketHeader}>
-                    <View>
-                      <Text style={styles.ticketLabel}>UPCOMING MEAL</Text>
-                      <Text style={styles.ticketMeal}>
-                        {targetMeal.mealType}
-                      </Text>
-                      <Text
-                        style={{ color: "#64748B", fontSize: 12, marginTop: 4 }}
-                      >
-                        {new Date(targetMeal.servingTime).toLocaleTimeString(
-                          [],
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          },
-                        )}
-                      </Text>
+            {activeMealIndex !== -1 ? (
+              <View style={styles.ticketCard}>
+                {targetMeal ? (
+                  <>
+                    <View style={styles.ticketHeader}>
+                      <View>
+                        <Text style={styles.ticketLabel}>UPCOMING MEAL</Text>
+                        <Text style={styles.ticketMeal}>
+                          {targetMeal.mealType}
+                        </Text>
+                        <Text
+                          style={{
+                            color: "#64748B",
+                            fontSize: 12,
+                            marginTop: 4,
+                          }}
+                        >
+                          {new Date(targetMeal.servingTime).toLocaleTimeString(
+                            [],
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            },
+                          )}
+                        </Text>
+                      </View>
+                      <View style={styles.liveBadge}>
+                        <View style={styles.dot} />
+                        <Text style={styles.liveText}>
+                          {activeMealIndex !== -1 &&
+                          new Date() >= new Date(targetMeal.servingTime)
+                            ? "LIVE NOW"
+                            : "UPCOMING"}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.liveBadge}>
-                      <View style={styles.dot} />
-                      <Text style={styles.liveText}>
-                        {activeMealIndex !== -1 &&
-                        new Date() >= new Date(targetMeal.servingTime)
-                          ? "LIVE NOW"
-                          : "UPCOMING"}
-                      </Text>
-                    </View>
-                  </View>
 
-                  <View style={styles.divider} />
+                    <View style={styles.divider} />
 
-                  <View style={styles.ticketBody}>
-                    {isOptedIn ? (
-                      <View style={styles.qrContainer}>
-                        {qrToken ? (
-                          <QRCode value={qrToken} size={160} />
-                        ) : (
-                          <ActivityIndicator color="#2563EB" />
-                        )}
-                        <Text style={styles.qrText}>Scan at Counter</Text>
-                        {targetMeal.status === "SCANNED" && (
-                          <View
-                            style={{
-                              marginTop: 10,
-                              flexDirection: "row",
-                              alignItems: "center",
-                            }}
-                          >
-                            <Feather
-                              name="check-circle"
-                              size={16}
-                              color="#16A34A"
-                            />
-                            <Text
+                    <View style={styles.ticketBody}>
+                      {isOptedIn ? (
+                        <View style={styles.qrContainer}>
+                          {qrToken ? (
+                            <QRCode value={qrToken} size={160} />
+                          ) : (
+                            <ActivityIndicator color="#2563EB" />
+                          )}
+                          <Text style={styles.qrText}>Scan at Counter</Text>
+                          {targetMeal.status === "SCANNED" && (
+                            <View
                               style={{
-                                color: "#16A34A",
-                                fontWeight: "700",
-                                marginLeft: 4,
+                                marginTop: 10,
+                                flexDirection: "row",
+                                alignItems: "center",
                               }}
                             >
-                              Claimed
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    ) : (
-                      <View style={styles.optInContainer}>
-                        <Feather name="slash" size={50} color="#CBD5E1" />
-                        <Text style={styles.optInText}>
-                          You have not opted in yet.
-                        </Text>
-                        <Text style={styles.optInSubText}>
-                          Toggle below to generate coupon.
-                        </Text>
-                      </View>
-                    )}
-                  </View>
+                              <Feather
+                                name="check-circle"
+                                size={16}
+                                color="#16A34A"
+                              />
+                              <Text
+                                style={{
+                                  color: "#16A34A",
+                                  fontWeight: "700",
+                                  marginLeft: 4,
+                                }}
+                              >
+                                Claimed
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      ) : (
+                        <View style={styles.optInContainer}>
+                          <Feather name="slash" size={50} color="#CBD5E1" />
+                          <Text style={styles.optInText}>
+                            You have not opted in yet.
+                          </Text>
+                          <Text style={styles.optInSubText}>
+                            Toggle below to generate coupon.
+                          </Text>
+                        </View>
+                      )}
+                    </View>
 
-                  <View style={styles.ticketFooter}>
-                    <Text style={styles.footerText}>
-                      {isOptedIn ? "Enjoy your meal!" : "Will you be eating?"}
+                    <View style={styles.ticketFooter}>
+                      <Text style={styles.footerText}>
+                        {isOptedIn ? "Enjoy your meal!" : "Will you be eating?"}
+                      </Text>
+                      {optingIn ? (
+                        <ActivityIndicator color="white" />
+                      ) : (
+                        <Switch
+                          trackColor={{ false: "#767577", true: "#4ADE80" }}
+                          thumbColor={isOptedIn ? "#ffffff" : "#f4f3f4"}
+                          onValueChange={handleOptInToggle}
+                          value={isOptedIn}
+                        />
+                      )}
+                    </View>
+                  </>
+                ) : (
+                  <View style={{ padding: 40, alignItems: "center" }}>
+                    <Text style={{ color: "#94A3B8" }}>
+                      No upcoming meals found.
                     </Text>
-                    {optingIn ? (
-                      <ActivityIndicator color="white" />
-                    ) : (
-                      <Switch
-                        trackColor={{ false: "#767577", true: "#4ADE80" }}
-                        thumbColor={isOptedIn ? "#ffffff" : "#f4f3f4"}
-                        onValueChange={handleOptInToggle}
-                        value={isOptedIn}
-                      />
-                    )}
                   </View>
-                </>
-              ) : (
+                )}
+              </View>
+            ) : (
+              <View style={styles.ticketCard}>
                 <View style={{ padding: 40, alignItems: "center" }}>
                   <Text style={{ color: "#94A3B8" }}>
                     No upcoming meals found.
                   </Text>
                 </View>
-              )}
-            </View>
+              </View>
+            )}
 
             {/* Menu List */}
             <Text style={styles.sectionTitle}>Today's Menu</Text>

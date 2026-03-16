@@ -1176,8 +1176,9 @@ export default function MarketplaceScreen() {
                     {offerItem.title}
                   </Text>
                   <Text style={s.modalItemPrice}>
-                    Listed at{" "}
-                    {offerItem.price === 0 ? "FREE" : `₹${offerItem.price}`}
+                    {offerItem.price === 0
+                      ? "FREE"
+                      : `Listed at ₹${offerItem.price}`}
                   </Text>
                 </View>
               )}

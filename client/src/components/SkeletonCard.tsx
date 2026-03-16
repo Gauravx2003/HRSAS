@@ -20,7 +20,7 @@ export function SkeletonCard() {
 
       {/* Resident info row */}
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-full bg-slate-200 flex-shrink-0" />
+        <div className="w-8 h-8 rounded-full bg-slate-200 shrink-0" />
         <div className="space-y-1.5">
           <div className="h-4 w-28 bg-slate-200 rounded" />
           <div className="h-3 w-20 bg-slate-200 rounded" />

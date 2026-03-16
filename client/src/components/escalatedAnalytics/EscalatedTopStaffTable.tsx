@@ -43,7 +43,7 @@ const EscalatedTopStaffTable = ({ data }: Props) => {
               key={item.staffName}
               className="px-5 py-3 flex items-center gap-4 hover:bg-slate-50/50 transition-colors"
             >
-              <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+              <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-orange-600">
                   {index + 1}
                 </span>

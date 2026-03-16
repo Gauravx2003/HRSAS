@@ -34,7 +34,7 @@ const NotificationPanel = ({
           </button>
         )}
       </div>
-      <div className="max-h-[400px] overflow-y-auto">
+      <div className="max-h-100 overflow-y-auto">
         <ul className="divide-y divide-slate-100">
           {notifications.map((notification) => (
             <li
@@ -45,7 +45,7 @@ const NotificationPanel = ({
             >
               <div className="flex items-start gap-3">
                 <div
-                  className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
+                  className={`mt-1 h-2 w-2 rounded-full shrink-0 ${
                     !notification.isRead ? "bg-green-500" : "bg-slate-300"
                   }`}
                 />

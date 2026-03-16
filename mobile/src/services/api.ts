@@ -6,7 +6,7 @@ import * as SecureStore from "expo-secure-store"; // <-- 1. Import SecureStore
 // ⚠️ REPLACE WITH YOUR LAPTOP'S LOCAL IP ADDRESS
 // Ensure this matches the one in global constants or index.tsx
 // TODO: Move to a shared config file
-const API_URL = "http://192.168.31.29:5000/api";
+const API_URL = "http://10.150.151.87:5000/api";
 
 const api = axios.create({
   baseURL: API_URL,

@@ -21,6 +21,10 @@ import {
 export const getResourcesWithStatus = async (hostelId: string) => {
   const now = new Date();
 
+  // const customNow = new Date("2026-03-20T10:30:00.000Z");
+
+  // console.log("Custom Now is", customNow);
+
   // Get all LAUNDRY resources for this hostel
   const allResources = await db
     .select()
@@ -80,7 +84,9 @@ export const getResourcesWithStatus = async (hostelId: string) => {
   let totalPossibleSlots = 0;
   for (let i = 0; i < 16; i++) {
     const slotStart = new Date(start.getTime() + i * 45 * 60000);
-    if (slotStart.getHours() >= 23) break;
+
+    //TODO: change 23 to 16
+    if (slotStart.getHours() >= 16) break;
     totalPossibleSlots++;
   }
 
@@ -151,6 +157,7 @@ export const getAvailableSlots = async (resourceId: string) => {
 
   // Start from the next full hour
   const start = new Date(now);
+  console.log(start);
   start.setMinutes(0, 0, 0);
   if (now.getMinutes() > 0) start.setHours(start.getHours() + 1);
 
@@ -159,7 +166,9 @@ export const getAvailableSlots = async (resourceId: string) => {
   for (let i = 0; i < 16; i++) {
     const slotStart = new Date(start.getTime() + i * 45 * 60000);
     const slotEnd = new Date(slotStart.getTime() + 45 * 60000);
-    if (slotStart.getHours() >= 23) break;
+
+    //TODO: change 23 to 16
+    if (slotStart.getHours() >= 16) break;
     allSlots.push({ startTime: slotStart, endTime: slotEnd });
   }
 

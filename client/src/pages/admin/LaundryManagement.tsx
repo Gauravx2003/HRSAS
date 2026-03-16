@@ -851,7 +851,7 @@ const OperationsTab = ({
                 className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-indigo-600">
                       {booking.userName?.charAt(0)?.toUpperCase() || "?"}
                     </span>
@@ -866,7 +866,7 @@ const OperationsTab = ({
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <span
                     className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                       booking.status === "ACTIVE"
@@ -920,7 +920,7 @@ const OperationsTab = ({
                 key={entry.id}
                 className="flex items-center gap-3 p-3 rounded-lg border border-slate-100"
               >
-                <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
                   <span className="text-xs font-bold text-purple-600">
                     {i + 1}
                   </span>
@@ -1038,7 +1038,7 @@ const AnalyticsTab = ({
           Based on {turnaround?.total_fulfilled ?? 0} fulfilled waitlist entries
         </p>
         <div className="mt-6 flex items-center gap-2 p-3 bg-indigo-50 rounded-lg">
-          <TrendingUp className="w-4 h-4 text-indigo-600 flex-shrink-0" />
+          <TrendingUp className="w-4 h-4 text-indigo-600 shrink-0" />
           <p className="text-xs text-indigo-700">
             {turnaround && Number(turnaround.avg_wait_minutes) <= 30
               ? "Great! Students wait less than 30 minutes on average."

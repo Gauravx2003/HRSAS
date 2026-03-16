@@ -197,7 +197,7 @@ const IssueDesk = () => {
       {/* Success Banner */}
       {issueSuccess && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center gap-3">
-          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-emerald-800">
               Book issued successfully!
@@ -308,7 +308,7 @@ const IssueDesk = () => {
         {/* Block reason */}
         {eligibility && !eligibility.eligible && (
           <div className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-100 rounded-lg">
-            <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
             <p className="text-sm text-red-700">
               Cannot issue: {eligibility.reason}
             </p>

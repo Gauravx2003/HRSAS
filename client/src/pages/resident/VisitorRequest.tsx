@@ -29,7 +29,6 @@ const VisitorRequest = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("ALL");
 
-
   useEffect(() => {
     fetchVisitors();
   }, [activeFilter]);
@@ -191,7 +190,7 @@ const VisitorRequest = () => {
 
                 {/* Visit Date */}
                 <div className="flex items-start gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                  <Calendar className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
                   <div className="flex-1">
                     <p className="text-xs text-slate-500">Visit Date</p>
                     <p className="text-sm font-medium text-slate-700">

@@ -173,7 +173,7 @@ const LateEntryExit = () => {
                 <div className="space-y-3 mb-4">
                   {/* From Time */}
                   <div className="flex items-start gap-2">
-                    <Clock className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <Clock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
                     <div className="flex-1">
                       <p className="text-xs text-slate-500">From</p>
                       <p className="text-sm font-medium text-slate-700">
@@ -184,7 +184,7 @@ const LateEntryExit = () => {
 
                   {/* To Time */}
                   <div className="flex items-start gap-2">
-                    <Clock className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                    <Clock className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
                     <div className="flex-1">
                       <p className="text-xs text-slate-500">To</p>
                       <p className="text-sm font-medium text-slate-700">

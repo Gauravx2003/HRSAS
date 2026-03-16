@@ -243,36 +243,6 @@ const EventModal: React.FC<EventModalProps> = ({
                 placeholder="Describe the event..."
               />
             </div>
-
-            <div className="flex gap-3 pt-4">
-              {createdEventId && !event ? (
-                <button
-                  type="button"
-                  onClick={handleFinish}
-                  className="flex-1 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  Finish & Close
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                  >
-                    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {event ? "Save Changes" : "Create Event"}
-                  </button>
-                </>
-              )}
-            </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Attachment (Optional)
@@ -310,6 +280,36 @@ const EventModal: React.FC<EventModalProps> = ({
                   </button>
                 )}
               </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              {createdEventId && !event ? (
+                <button
+                  type="button"
+                  onClick={handleFinish}
+                  className="flex-1 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  Finish & Close
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-medium rounded-lg hover:bg-slate-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {event ? "Save Changes" : "Create Event"}
+                  </button>
+                </>
+              )}
             </div>
           </form>
 

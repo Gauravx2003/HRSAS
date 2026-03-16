@@ -35,6 +35,15 @@ export const createEventController = async (
       category: category || "CULTURAL",
     });
 
+    sendPushNotificationToAll(
+      `🎉 New Event: ${title}`,
+      "Check the Campus Hub for details.",
+      {
+        route: "/(resident)/campus-hub",
+        params: { tab: "Events" },
+      },
+    );
+
     await redis.del("campus_hub_data");
 
     res.status(201).json(newEvent);

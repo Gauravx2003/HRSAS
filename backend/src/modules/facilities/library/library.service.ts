@@ -858,7 +858,7 @@ export const getMyBooksResident = async (
     .where(
       and(
         eq(bookReservations.userId, userId),
-        inArray(bookReservations.status, ["RESERVED", "EXPIRED"]),
+        inArray(bookReservations.status, ["RESERVED"]),
       ),
     );
 

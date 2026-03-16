@@ -110,31 +110,69 @@ export default function PaymentsScreen() {
         key: process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID,
       };
 
-      // paymentId, razorpayPaymentId, razorpayOrderId, razorpaySignature
-
-      RazorpayCheckout.open(options as any).then(async (data: any) => {
-        try {
-          await verifyPayment({
-            paymentId: item.id,
-            razorpayPaymentId: data.razorpay_payment_id,
-            razorpayOrderId: data.razorpay_order_id,
-            razorpaySignature: data.razorpay_signature,
-          });
-          Alert.alert("Success", "Payment verified successfully");
-          fetchPayments();
-        } catch (error: any) {
-          console.error(
-            "Payment verification failed:",
-            error.response?.data?.message,
-          );
-          Alert.alert("Error", "Payment verification failed");
-        } finally {
+      // Handle the Promise correctly
+      RazorpayCheckout.open(options as any)
+        .then(async (data: any) => {
+          // This block only runs on a SUCCESSFUL payment
+          try {
+            await verifyPayment({
+              paymentId: item.id,
+              razorpayPaymentId: data.razorpay_payment_id,
+              razorpayOrderId: data.razorpay_order_id,
+              razorpaySignature: data.razorpay_signature,
+            });
+            Alert.alert("Success", "Payment verified successfully");
+            fetchPayments();
+          } catch (error: any) {
+            console.error(
+              "Payment verification failed:",
+              error.response?.data?.message,
+            );
+            Alert.alert(
+              "Error",
+              "Payment verification failed. If money was deducted, contact admin.",
+            );
+          } finally {
+            setProcessingId(null);
+          }
+        })
+        .catch((error: any) => {
+          // This block runs when the user CANCELS or the payment FAILS
           setProcessingId(null);
-        }
-      });
+
+          let errorDescription = "Payment was cancelled or failed.";
+
+          try {
+            // Razorpay often sends the description as a stringified JSON object
+            const parsedError = JSON.parse(error.description);
+            if (parsedError.error && parsedError.error.description) {
+              errorDescription = parsedError.error.description;
+            }
+          } catch (e) {
+            // If it's not JSON, just use the raw string or default message
+            if (
+              typeof error.description === "string" &&
+              error.description !== "undefined"
+            ) {
+              errorDescription = error.description;
+            }
+          }
+
+          // Don't show an aggressive error if they just pressed the back button
+          if (
+            error.code === 0 ||
+            errorDescription.toLowerCase().includes("cancel")
+          ) {
+            console.log("User cancelled payment.");
+            // You can optionally show a toast here, or just do nothing.
+          } else {
+            Alert.alert("Payment Failed", errorDescription);
+          }
+        });
     } catch (e) {
-      console.error("Payment failed:", e);
-      Alert.alert("Error", "Payment failed");
+      // This catch block handles errors from your own backend (createRazorpayOrder)
+      console.error("Failed to initialize payment order:", e);
+      Alert.alert("Error", "Could not initialize payment. Please try again.");
       setProcessingId(null);
     }
   };

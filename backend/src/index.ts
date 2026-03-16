@@ -47,9 +47,9 @@ app.get("/health", (_req: Request, res: Response) => {
   res.json({ status: "OK" });
 });
 
-// cron.schedule("* * * * *", () => {
-//   runEscalationJob().catch(console.error);
-// });
+cron.schedule("0 * * * *", () => {
+  runEscalationJob().catch(console.error);
+});
 
 startLibraryCron();
 startOrchestratorCron();
