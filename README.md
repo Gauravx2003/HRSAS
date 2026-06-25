@@ -5,6 +5,13 @@ A robust monorepo combining a **Node.js/PostgreSQL Backend**, **React 19 Web Das
 
 ---
 
+## 🎬 Demo Video
+
+> [!IMPORTANT] > **View Project Demo:** [https://drive.google.com/file/d/1iT_jYIA4zVkZLzemLkvhMVOcfVKeyjvL/view?usp=sharing]
+
+---
+
+
 ## 🌟 Vision & Overview
 **Habitat** goes beyond traditional management software. It serves as a comprehensive **social, logistics, and governance hub** for students, staff, and administration. It solves daily campus friction points with elegant technology:
 - 🛠️ **Maintenance**: Chat-based complaint desk with SLA auto-escalation.
